@@ -1,2 +1,3 @@
 # Android-App-Proj
-Data Structure &amp; Algorithms course codes, in Python and C++
+Mobile User Experience Course Projects
+Written in Android Studio
