@@ -1,3 +1,5 @@
-# Android-App-Proj
-Mobile User Experience Course Projects
-Written in Android Studio
+# Overview
+Mobile User Experience Course Projects, written in Android Studio.
+
+## Project Jinan (Todo list)
+A simple demonstration of todo list app.
