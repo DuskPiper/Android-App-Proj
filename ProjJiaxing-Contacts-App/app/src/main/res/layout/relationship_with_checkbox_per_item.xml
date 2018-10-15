@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/addRelationshipName"
+        android:layout_width="match_parent"
+        android:layout_height="24dp"
+        android:layout_marginLeft="6dp"
+        android:layout_marginRight="32dp"
+        android:layout_marginTop="12.4dp"
+        android:text="name"
+        android:textSize="18dp"
+        android:gravity="center"
+        app:layout_constraintRight_toLeftOf="@+id/adderCheckbox"
+        app:layout_constraintTop_toTopOf="parent" />
+
+
+
+    <CheckBox
+        android:id="@+id/adderCheckbox"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintRight_toRightOf="@+id/addRelationshipName"
+        app:layout_constraintTop_toTopOf="parent"
+
+        android:focusable="false"
+        />
+
+</android.support.constraint.ConstraintLayout>

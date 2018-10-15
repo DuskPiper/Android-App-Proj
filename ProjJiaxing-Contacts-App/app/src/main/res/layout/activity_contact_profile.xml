@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".AddNewContact">
+
+    <TextView
+        android:id="@+id/addNewNameTitle"
+        android:layout_alignParentStart="true"
+        android:text=" Name"
+        android:textSize="18dp"
+        android:textColor= "#404040"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="left"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_marginTop="20dp"/>
+    <TextView
+        android:id="@+id/addNewNameBox"
+        android:layout_below="@+id/addNewNameTitle"
+        android:height="58dp"
+        android:hint="Name"
+        android:textSize="36dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor= "#c1c1c1"
+        android:gravity="left"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"/>
+    <TextView
+        android:id="@+id/addNewPhoneTitle"
+        android:layout_below="@+id/addNewNameBox"
+        android:layout_alignParentStart="true"
+        android:text=" Phone Number"
+        android:textSize="18dp"
+        android:textColor= "#404040"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="left"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_marginTop="10dp"/>
+    <TextView
+        android:id="@+id/addNewPhoneBox"
+        android:layout_below="@+id/addNewPhoneTitle"
+        android:height="58dp"
+        android:hint="Phone Number"
+        android:textSize="36dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor= "#c1c1c1"
+        android:gravity="left"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"/>
+    <TextView
+        android:id="@+id/addNewRelationshipTitle"
+        android:layout_below="@+id/addNewPhoneBox"
+        android:layout_alignParentStart="true"
+        android:text=" Relationships"
+        android:textSize="18dp"
+        android:textColor= "#404040"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="left"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        android:layout_marginTop="10dp"/>
+
+    <ListView
+        android:id="@+id/addNewRelationshipList"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_below="@id/addNewRelationshipTitle"
+        android:layout_marginBottom="30dp"
+        android:gravity="center"
+        android:layout_marginLeft="30dp"
+        android:layout_marginRight="30dp"
+        ></ListView>
+
+
+
+
+</RelativeLayout>
