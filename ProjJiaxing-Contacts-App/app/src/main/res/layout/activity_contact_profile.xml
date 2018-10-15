@@ -7,7 +7,7 @@
     tools:context=".AddNewContact">
 
     <TextView
-        android:id="@+id/addNewNameTitle"
+        android:id="@+id/viewNameTitle"
         android:layout_alignParentStart="true"
         android:text=" Name"
         android:textSize="18dp"
@@ -19,24 +19,26 @@
         android:layout_marginRight="30dp"
         android:layout_marginTop="20dp"/>
     <TextView
-        android:id="@+id/addNewNameBox"
-        android:layout_below="@+id/addNewNameTitle"
+        android:id="@+id/viewNameBox"
+        android:layout_below="@+id/viewNameTitle"
         android:height="58dp"
         android:hint="Name"
         android:textSize="36dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor= "#c1c1c1"
+        android:textColor= "#000000"
+        android:textColorHint="#e1e1e1"
         android:gravity="left"
         android:layout_marginLeft="30dp"
         android:layout_marginRight="30dp"/>
     <TextView
-        android:id="@+id/addNewPhoneTitle"
-        android:layout_below="@+id/addNewNameBox"
+        android:id="@+id/viewPhoneTitle"
+        android:layout_below="@+id/viewNameBox"
         android:layout_alignParentStart="true"
         android:text=" Phone Number"
         android:textSize="18dp"
-        android:textColor= "#404040"
+        android:textColor= "#000000"
+        android:textColorHint="#e1e1e1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="left"
@@ -44,20 +46,21 @@
         android:layout_marginRight="30dp"
         android:layout_marginTop="10dp"/>
     <TextView
-        android:id="@+id/addNewPhoneBox"
-        android:layout_below="@+id/addNewPhoneTitle"
+        android:id="@+id/viewPhoneBox"
+        android:layout_below="@+id/viewPhoneTitle"
         android:height="58dp"
         android:hint="Phone Number"
         android:textSize="36dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor= "#c1c1c1"
+        android:textColor= "#000000"
+        android:textColorHint="#e1e1e1"
         android:gravity="left"
         android:layout_marginLeft="30dp"
         android:layout_marginRight="30dp"/>
     <TextView
-        android:id="@+id/addNewRelationshipTitle"
-        android:layout_below="@+id/addNewPhoneBox"
+        android:id="@+id/viewRelationshipTitle"
+        android:layout_below="@+id/viewPhoneBox"
         android:layout_alignParentStart="true"
         android:text=" Relationships"
         android:textSize="18dp"
@@ -70,10 +73,10 @@
         android:layout_marginTop="10dp"/>
 
     <ListView
-        android:id="@+id/addNewRelationshipList"
+        android:id="@+id/viewRelationshipList"
         android:layout_height="wrap_content"
         android:layout_width="match_parent"
-        android:layout_below="@id/addNewRelationshipTitle"
+        android:layout_below="@id/viewRelationshipTitle"
         android:layout_marginBottom="30dp"
         android:gravity="center"
         android:layout_marginLeft="30dp"

@@ -3,5 +3,6 @@
     <string name="title_home">Contacts</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
-    <string name="title_activity_add_new_contact">Contact Details</string>
+    <string name="title_activity_add_new_contact">Add Contact</string>
+    <string name="title_activity_contact_profile">Contact Details</string>
 </resources>

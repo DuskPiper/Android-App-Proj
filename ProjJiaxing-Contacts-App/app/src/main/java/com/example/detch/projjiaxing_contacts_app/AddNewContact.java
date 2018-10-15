@@ -69,13 +69,18 @@ public class AddNewContact extends Activity {
                 sendBackNewContact.putString("phone",addedPhone);
                 Intent addedContact=new Intent();
                 addedContact.putExtras(sendBackNewContact);
-                AddNewContact.this.setResult(1111,addedContact);
+                AddNewContact.this.setResult(101,addedContact);
                 AddNewContact.this.finish();
             }
         });
     }
 
-
+    @Override
+    public void onBackPressed(){
+        Intent cancelAdding=new Intent();
+        AddNewContact.this.setResult(102,cancelAdding);
+        AddNewContact.this.finish();
+    }
 
     public class AddRelationshipAdapter extends SimpleAdapter {
         List<Map<String, String>> listmaps;
@@ -90,7 +95,7 @@ public class AddNewContact extends Activity {
         @Override
         public View getView(final int position, View convertView, ViewGroup parent) {
             View view = super.getView(position, convertView, parent);
-            CheckBox deleter = (CheckBox) view.findViewById(R.id.deleterBox);
+            CheckBox deleter = (CheckBox) view.findViewById(R.id.adderCheckbox);
             deleter.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {

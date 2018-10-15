@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -32,9 +33,6 @@ public class ContactsList extends AppCompatActivity {
     static List<Integer> to_delete = new ArrayList<Integer>();
     ContactListMainListAdapter contactListAdapter;
 
-
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,10 +48,10 @@ public class ContactsList extends AppCompatActivity {
         main_list.setAdapter(contactListAdapter);
         contactListAdapter.notifyDataSetChanged();
 
-
         del_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                //now remove
                 for(int i=to_delete.size()-1;i>=0;i--){
                     int now_delete=to_delete.get(i);
                     contactbook.remove(now_delete);
@@ -61,6 +59,14 @@ public class ContactsList extends AppCompatActivity {
                 }
                 contactListAdapter.notifyDataSetChanged();
                 to_delete.clear();
+                //now clear checkboxes
+                CheckBox cb;
+                for(int i=0;i<main_list.getChildCount();i++){
+                    cb=(CheckBox)main_list.getChildAt(i).findViewById(R.id.deleterBox);
+                    cb.setChecked(false);
+                }
+                contactListAdapter.notifyDataSetChanged();
+                saveData(ContactsList.this);
             }
         });
 
@@ -77,6 +83,22 @@ public class ContactsList extends AppCompatActivity {
                 Intent toAddNewContact=new Intent(ContactsList.this,AddNewContact.class);
                 toAddNewContact.putExtras(sendnames);
                 startActivityForResult(toAddNewContact,100);//+new contact
+                saveData(ContactsList.this);
+            }
+        });
+
+        main_list.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
+                Map<String,String> personToShow = contactbook.get(position);
+                Intent personInfo = new Intent(ContactsList.this,ContactProfile.class);
+                //Bundle infoBundle=new Bundle();
+                personInfo.putExtra("name",personToShow.get("name"));
+                personInfo.putExtra("phone",personToShow.get("phone"));
+                personInfo.putExtra("relationships",personToShow.get("relationships"));
+                startActivityForResult(personInfo,200);
+                //startActivity(personInfo);
+                //saveData(ContactsList.this);
             }
         });
     }
@@ -91,34 +113,45 @@ public class ContactsList extends AppCompatActivity {
         super.onPause();
         saveData(ContactsList.this);
     }
-
     @Override
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
         //super.onActivityResult();
-        //here we unload data
-        //String result=data.getExtras().get
-        Bundle newlyAdded=data.getExtras();
-        String newName=newlyAdded.getString("name");
-        String newPhone=newlyAdded.getString("phone");
-        ArrayList<String> newRelationship=newlyAdded.getStringArrayList("relationship");
-        StringBuffer relationshipBuffer=new StringBuffer();
-        for(int i=0;i<newRelationship.size();i++){
-            relationshipBuffer.append(newRelationship.get(i));
-            relationshipBuffer.append(";");
+        if(resultCode==101){
+            //added new contact
+            Bundle newlyAdded=data.getExtras();
+            String newName=newlyAdded.getString("name");
+            String newPhone=newlyAdded.getString("phone");
+            ArrayList<String> newRelationship=newlyAdded.getStringArrayList("relationship");
+            StringBuffer relationshipBuffer=new StringBuffer();
+            for(int i=0;i<newRelationship.size();i++){
+                relationshipBuffer.append(newRelationship.get(i));
+                relationshipBuffer.append(";");
+            }
+            if(relationshipBuffer.length()>0){
+                relationshipBuffer.deleteCharAt(relationshipBuffer.length()-1);
+            }
+            Map<String,String> newPerson=new HashMap<String, String>();
+            newPerson.put("name",newName);
+            newPerson.put("phone",newPhone);
+            newPerson.put("relationships",newRelationship.toString());
+            this.contactbook.add(newPerson);
+            Log.e("Activity Jump","Added new contact");
+            Toast.makeText(ContactsList.this.getApplicationContext(),
+                    "Added "+newName,Toast.LENGTH_SHORT).show();
+            this.contactListAdapter.notifyDataSetChanged();
+            saveData(ContactsList.this);
         }
-        relationshipBuffer.deleteCharAt(relationshipBuffer.length()-1);
-        Map<String,String> newPerson=new HashMap<String, String>();
-        newPerson.put("name",newName);
-        newPerson.put("phone",newPhone);
-        newPerson.put("relationships",newRelationship.toString());
-        this.contactbook.add(newPerson);
-        Log.e("Activity Jump","Added new contact");
-        Toast.makeText(ContactsList.this.getApplicationContext(),
-                "Added "+newName,Toast.LENGTH_SHORT).show();
-        this.contactListAdapter.notifyDataSetChanged();
-        
-    }
+        else if(requestCode==102){
+            //canceled adding contact
+            Toast.makeText(ContactsList.this.getApplicationContext(),
+                    "Canceled adding",Toast.LENGTH_SHORT).show();
+        }
+        else if(requestCode==201){
+            //done watching profile details
+        }
+        else{}
 
+    }
 
 
     public void saveData(Context context) {
@@ -184,7 +217,7 @@ public class ContactsList extends AppCompatActivity {
         @Override
         public View getView(final int position, View convertView, ViewGroup parent) {
             View view = super.getView(position, convertView, parent);
-            CheckBox deleter = (CheckBox) view.findViewById(R.id.deleterBox);
+            final CheckBox deleter = (CheckBox) view.findViewById(R.id.deleterBox);
             deleter.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -195,7 +228,7 @@ public class ContactsList extends AppCompatActivity {
                     else{
                         int index=ContactsList.to_delete.indexOf(position);
                         if(index>-1){
-                            ContactsList.to_delete.remove(position);
+                            ContactsList.to_delete.remove(new Integer(position));
                         }
                     }
                 }
