@@ -1,17 +1,24 @@
 package com.example.detch.projjiaxing_contacts_app;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.w3c.dom.Text;
 
@@ -24,11 +31,13 @@ public class ContactProfile extends AppCompatActivity {
     TextView viewName;
     TextView viewPhone;
     ListView viewRelationships;
+    ImageButton profilePhoto;
     ArrayList<Map<String,String>> liteContactBook;
     String name;
     String phone;
     String relationshipsString;
     String[] relationshipNames;
+    Bitmap viewPhoto;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,6 +47,7 @@ public class ContactProfile extends AppCompatActivity {
         viewName=(TextView)findViewById(R.id.viewNameBox);
         viewPhone=(TextView)findViewById(R.id.viewPhoneBox);
         viewRelationships=(ListView)findViewById(R.id.viewRelationshipList);
+        profilePhoto=(ImageButton)findViewById(R.id.viewOrAddPhoto);
         name=this.getIntent().getStringExtra("name");
         phone=this.getIntent().getStringExtra("phone");
         relationshipsString=this.getIntent().getStringExtra("relationships");
@@ -59,11 +69,26 @@ public class ContactProfile extends AppCompatActivity {
             person.put("name",relationshipNames[i]);
             liteContactBook.add(person);
         }
-        Log.e("DEBUG",Integer.toString(relationshipNames.length));
         SimpleAdapter viewRelationshipAdapter = new SimpleAdapter(
                 ContactProfile.this,liteContactBook,R.layout.relationship_without_checkbox_per_item,new String[]{"name"},new int[]{R.id.watchRelationshipName});
         viewRelationships.setAdapter(viewRelationshipAdapter);
         viewRelationshipAdapter.notifyDataSetChanged();
+        // Now set profile photo
+        Bitmap nullPhoto = BitmapFactory.decodeResource(getResources(),R.drawable.nullphoto);
+        profilePhoto.setImageBitmap(nullPhoto);
+
+
+
+
+        // Set listeners
+        profilePhoto.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Start camera for a photo
+                Intent it = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(it, Activity.DEFAULT_KEYS_DIALER);
+            }
+        });
     }
 
     @Override
@@ -72,4 +97,25 @@ public class ContactProfile extends AppCompatActivity {
         ContactProfile.this.setResult(201,doneViewing);
         ContactProfile.this.finish();
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Back from camera
+        if(resultCode == RESULT_OK){
+            // Fetch photo and resize
+            Bitmap rawPhoto = (Bitmap) data.getExtras().get("data");
+            int w = rawPhoto.getWidth();
+            int h = rawPhoto.getHeight();
+            int squareWidth = w>=h?h:w;// Width after croping
+            Bitmap croppedPhoto = Bitmap.createBitmap(rawPhoto,(w-squareWidth)/2,(h-squareWidth)/2,squareWidth,squareWidth);
+            Bitmap photo = Bitmap.createScaledBitmap(croppedPhoto,200,200,true);
+            // Now show the photo (TEST)
+            profilePhoto.setImageBitmap(photo);
+        } else{
+            Toast.makeText(this.getApplicationContext(),
+                    "Profile photo not added",Toast.LENGTH_SHORT).show();
+        }
+
+    }
+
 }
