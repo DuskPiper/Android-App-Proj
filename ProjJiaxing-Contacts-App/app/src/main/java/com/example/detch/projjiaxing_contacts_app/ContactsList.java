@@ -27,17 +27,14 @@ public class ContactsList extends AppCompatActivity {
     Button del_button;
     Button add_button;
     ListView main_list;
-    /*Map<String, String> contacts = new HashMap();
-    Map<String, String> relationships = new HashMap();*/
     List<Map<String,String >> contactbook = new ArrayList<Map<String,String >>();//contacts and their relationships are saved here
-    static List<Integer> to_delete = new ArrayList<Integer>();
+    static List<Integer> to_delete = new ArrayList<Integer>();//index to delete
     ContactListMainListAdapter contactListAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_contacts_list);
-
 
         add_button = (Button) findViewById(R.id.addButton);
         del_button = (Button) findViewById(R.id.delButton);
@@ -116,8 +113,10 @@ public class ContactsList extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
         //super.onActivityResult();
+        this.to_delete.clear();
         if(resultCode==101){
-            //added new contact
+            // Case: just added new contact
+            // Now fetch intent data
             Bundle newlyAdded=data.getExtras();
             String newName=newlyAdded.getString("name");
             String newPhone=newlyAdded.getString("phone");
@@ -130,11 +129,34 @@ public class ContactsList extends AppCompatActivity {
             if(relationshipBuffer.length()>0){
                 relationshipBuffer.deleteCharAt(relationshipBuffer.length()-1);
             }
+            // Now create a new object(person) for contactbook
             Map<String,String> newPerson=new HashMap<String, String>();
             newPerson.put("name",newName);
             newPerson.put("phone",newPhone);
             newPerson.put("relationships",newRelationship.toString());
             this.contactbook.add(newPerson);
+            // Now add this new person's relationship to existing contacts (two-way relationship)
+            for(int i=0;i<newRelationship.size();i++){
+                String oldFriendName = newRelationship.get(i);
+                // for (Map<String,String> oldFriend : this.contactbook){
+                for (int j=0;j<this.contactbook.size();j++){
+                    Map<String,String> oldFriend = this.contactbook.get(j);
+                    if (oldFriend.get("name").equals(oldFriendName)) {
+                        String updatedRelationships = new String();
+                        if (oldFriend.get("relationships").length()<3){// No relationship yet
+                            updatedRelationships = "["+newName+"]";
+                        } else {// Append newName to end of String
+                            StringBuffer oldRelationshipBuffer = new StringBuffer(oldFriend.get("relationships"));
+                            oldRelationshipBuffer.deleteCharAt(oldRelationshipBuffer.length()-1);
+                            updatedRelationships = oldRelationshipBuffer + ", " + newName + "]";
+                        }
+                        Log.e("Update old relationship"+oldFriendName,"Now relation:"+updatedRelationships);
+                        oldFriend.put("relationships",updatedRelationships);
+                        this.contactbook.set(j,oldFriend);// Update oldFriend back
+                    }
+                }
+            }
+            // Now do some wrap-ups
             Log.e("Activity Jump","Added new contact");
             Toast.makeText(ContactsList.this.getApplicationContext(),
                     "Added "+newName,Toast.LENGTH_SHORT).show();
@@ -142,12 +164,12 @@ public class ContactsList extends AppCompatActivity {
             saveData(ContactsList.this);
         }
         else if(requestCode==102){
-            //canceled adding contact
+            // Canceled adding contact
             Toast.makeText(ContactsList.this.getApplicationContext(),
                     "Canceled adding",Toast.LENGTH_SHORT).show();
         }
         else if(requestCode==201){
-            //done watching profile details
+            // Done watching profile details
         }
         else{}
 
