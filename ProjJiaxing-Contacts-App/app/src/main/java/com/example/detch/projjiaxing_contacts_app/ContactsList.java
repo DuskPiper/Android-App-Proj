@@ -3,6 +3,8 @@ package com.example.detch.projjiaxing_contacts_app;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,12 +17,15 @@ import android.widget.CompoundButton;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.Toast;
+import android.util.Base64;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.util.*;
+
 
 
 public class ContactsList extends AppCompatActivity {
@@ -30,6 +35,7 @@ public class ContactsList extends AppCompatActivity {
     List<Map<String,String >> contactbook = new ArrayList<Map<String,String >>();//contacts and their relationships are saved here
     static List<Integer> to_delete = new ArrayList<Integer>();//index to delete
     ContactListMainListAdapter contactListAdapter;
+    Map<String,byte[]> contactAlbum = new HashMap<String, byte[]>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,11 +94,22 @@ public class ContactsList extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 Map<String,String> personToShow = contactbook.get(position);
+                byte[] photoToShow;
+                String nameToShow = personToShow.get("name");
+                if (contactAlbum.containsKey(nameToShow)) {
+                    photoToShow = contactAlbum.get(nameToShow);
+                    Log.e("Photo Trace","found photo for "+nameToShow+", sending to profile");
+                } else {
+                    Log.e("Photo Trace","cannot find photo for "+nameToShow+"using default");
+                    Bitmap nullPhoto = BitmapFactory.decodeResource(getResources(),R.drawable.nullphoto);
+                    photoToShow = BitmapToBytes(nullPhoto);
+                    contactAlbum.put(nameToShow,photoToShow);
+                }
                 Intent personInfo = new Intent(ContactsList.this,ContactProfile.class);
-                //Bundle infoBundle=new Bundle();
-                personInfo.putExtra("name",personToShow.get("name"));
+                personInfo.putExtra("name",nameToShow);
                 personInfo.putExtra("phone",personToShow.get("phone"));
                 personInfo.putExtra("relationships",personToShow.get("relationships"));
+                personInfo.putExtra("photo",photoToShow);
                 startActivityForResult(personInfo,200);
                 //startActivity(personInfo);
                 //saveData(ContactsList.this);
@@ -114,6 +131,73 @@ public class ContactsList extends AppCompatActivity {
     protected void onActivityResult(int requestCode,int resultCode,Intent data){
         //super.onActivityResult();
         this.to_delete.clear();
+        switch(resultCode){
+            case 101:
+                // Case: just added new contact
+                // Now fetch intent data
+                Bundle newlyAdded=data.getExtras();
+                String newName=newlyAdded.getString("name");
+                String newPhone=newlyAdded.getString("phone");
+                ArrayList<String> newRelationship=newlyAdded.getStringArrayList("relationship");
+                StringBuffer relationshipBuffer=new StringBuffer();
+                for(int i=0;i<newRelationship.size();i++){
+                    relationshipBuffer.append(newRelationship.get(i));
+                    relationshipBuffer.append(";");
+                }
+                if(relationshipBuffer.length()>0){
+                    relationshipBuffer.deleteCharAt(relationshipBuffer.length()-1);
+                }
+                // Now create a new object(person) for contactbook
+                Map<String,String> newPerson=new HashMap<String, String>();
+                newPerson.put("name",newName);
+                newPerson.put("phone",newPhone);
+                newPerson.put("relationships",newRelationship.toString());
+                this.contactbook.add(newPerson);
+                // Now add this new person's relationship to existing contacts (two-way relationship)
+                for(int i=0;i<newRelationship.size();i++){
+                    String oldFriendName = newRelationship.get(i);
+                    // for (Map<String,String> oldFriend : this.contactbook){
+                    for (int j=0;j<this.contactbook.size();j++){
+                        Map<String,String> oldFriend = this.contactbook.get(j);
+                        if (oldFriend.get("name").equals(oldFriendName)) {
+                            String updatedRelationships = new String();
+                            if (oldFriend.get("relationships").length()<3){// No relationship yet
+                                updatedRelationships = "["+newName+"]";
+                            } else {// Append newName to end of String
+                                StringBuffer oldRelationshipBuffer = new StringBuffer(oldFriend.get("relationships"));
+                                oldRelationshipBuffer.deleteCharAt(oldRelationshipBuffer.length()-1);
+                                updatedRelationships = oldRelationshipBuffer + ", " + newName + "]";
+                            }
+                            Log.e("Update old relationship"+oldFriendName,"Now relation:"+updatedRelationships);
+                            oldFriend.put("relationships",updatedRelationships);
+                            this.contactbook.set(j,oldFriend);// Update oldFriend back
+                        }
+                    }
+                }
+                // Now do some wrap-ups
+                Log.e("Activity Jump","Added new contact");
+                Toast.makeText(ContactsList.this.getApplicationContext(),
+                        "Added "+newName,Toast.LENGTH_SHORT).show();
+                this.contactListAdapter.notifyDataSetChanged();
+                saveData(ContactsList.this);
+                break;
+            case 102:
+                // Canceled adding contact
+                Toast.makeText(ContactsList.this.getApplicationContext(),
+                        "Canceled adding",Toast.LENGTH_SHORT).show();
+                break;
+            case 201:
+                // Done watching profile details
+                byte[] encodedPhoto = data.getByteArrayExtra("photo");
+                String viewedName = data.getStringExtra("name");
+                this.contactAlbum.put(viewedName,encodedPhoto);
+                Log.e("Photo Trace","photo received in main and updated in main");
+                saveData(ContactsList.this);
+                break;
+            default:
+                break;
+        }
+        /*
         if(resultCode==101){
             // Case: just added new contact
             // Now fetch intent data
@@ -170,16 +254,22 @@ public class ContactsList extends AppCompatActivity {
         }
         else if(requestCode==201){
             // Done watching profile details
+            byte[] encodedPhoto = data.getByteArrayExtra("photo");
+            String viewedName = data.getStringExtra("name");
+            this.contactAlbum.put(viewedName,encodedPhoto);
+            Log.e("Photo Trace","photo received in main and updated in main");
+            saveData(ContactsList.this);
         }
         else{}
+        */
 
     }
 
-
     public void saveData(Context context) {
-        //save contactbook(contacts and relationships)
+
+        // Now Save contactbook(contacts and relationships)
         List<Map<String, String>> data=this.contactbook;
-        String key="saves";
+        String key="contactbook saves";
         JSONArray mJsonArray = new JSONArray();
         for (int i = 0; i < data.size(); i++) {
             Map<String, String> itemMap = data.get(i);
@@ -193,17 +283,40 @@ public class ContactsList extends AppCompatActivity {
             }
             mJsonArray.put(object);
         }
-        SharedPreferences sp = context.getSharedPreferences("finals", Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences("contact book", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         editor.putString(key, mJsonArray.toString());
         editor.commit();
+        // Now encode contactAlbum photo(byte[]) into string(Base64) and Save
+        Map<String, String> encodedAlbum = new HashMap<String, String>();
+        List<Map<String,String>> data2 = new ArrayList<Map<String, String>>();
+        for (String decodedAlbumkey : this.contactAlbum.keySet()) {
+            String encodedAlbumPhoto = BytesToBase64(this.contactAlbum.get(decodedAlbumkey));
+            encodedAlbum.put(decodedAlbumkey,encodedAlbumPhoto);
+        }
+        String key2 = "contact album saves";
+        JSONArray mJsonArray2 = new JSONArray();
+        Iterator<Map.Entry<String, String>> iterator = encodedAlbum.entrySet().iterator();
+        JSONObject object2 = new JSONObject();
+        while (iterator.hasNext()) {
+            Map.Entry<String, String> entry = iterator.next();
+            try {
+                object2.put(entry.getKey(), entry.getValue());
+                Log.e("Photo Trace","saving photo for "+entry.getKey());
+            } catch (JSONException e) { }
+        }
+        mJsonArray2.put(object2);
+        SharedPreferences sp2 = context.getSharedPreferences("contact album", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor2 = sp2.edit();
+        editor2.putString(key2, mJsonArray2.toString());
+        editor2.commit();
     }
 
     public void loadData(Context context) {
-        //restore contactbook(contacts and relationships)
-        String key="saves";
+        // Now Restore data including contactbook(contacts and relationships)
+        String key="contactbook saves";
         List<Map<String, String>> data = new ArrayList<Map<String, String>>();
-        SharedPreferences sp = context.getSharedPreferences("finals", Context.MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences("contact book", Context.MODE_PRIVATE);
         String result = sp.getString(key, "");
         try {
             JSONArray array = new JSONArray(result);
@@ -222,8 +335,45 @@ public class ContactsList extends AppCompatActivity {
             }
         } catch (JSONException e) { }
         this.contactbook=data;
+        // Now restore contact album
+        String key2 = "contact album saves";
+        Map<String, String> encodedAlbum = new HashMap<String, String>();
+        SharedPreferences sp2 = context.getSharedPreferences("contact album", Context.MODE_PRIVATE);
+        String result2 = sp2.getString(key2, "");
+        try {
+            JSONArray array2 = new JSONArray(result2);
+            JSONObject itemObject2 = array2.getJSONObject(0);
+            Map<String, String> itemMap2 = new HashMap<String, String>();
+            JSONArray names2 = itemObject2.names();
+            if (names2 != null) {
+                for (int j = 0; j < names2.length(); j++) {
+                    String name2 = names2.getString(j);
+                    String value2 = itemObject2.getString(name2);
+                    itemMap2.put(name2, value2);
+                    Log.e("Photo Trace","laoding photo for "+name2);
+                }
+            }
+            encodedAlbum = itemMap2;
+        } catch (JSONException e) { }
+        this.contactAlbum.clear();
+        for (String encodedAlbumKey : encodedAlbum.keySet()) {
+            byte[] decodedAlbumPhoto = Base64ToBytes(encodedAlbum.get(encodedAlbumKey));
+            this.contactAlbum.put(encodedAlbumKey,decodedAlbumPhoto);
+        }
+    }
 
+    public byte[] BitmapToBytes(Bitmap bm) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
 
+    public String BytesToBase64(byte[] bt) {
+        return Base64.encodeToString(bt,Base64.DEFAULT);
+    }
+
+    public byte[] Base64ToBytes(String st) {
+        return Base64.decode(st,Base64.NO_WRAP);
     }
 
     public class ContactListMainListAdapter extends SimpleAdapter {

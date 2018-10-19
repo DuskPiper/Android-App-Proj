@@ -22,6 +22,7 @@ import android.widget.Toast;
 
 import org.w3c.dom.Text;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ public class ContactProfile extends AppCompatActivity {
     String relationshipsString;
     String[] relationshipNames;
     Bitmap viewPhoto;
+    byte[] encodedPhoto;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,8 +76,10 @@ public class ContactProfile extends AppCompatActivity {
         viewRelationships.setAdapter(viewRelationshipAdapter);
         viewRelationshipAdapter.notifyDataSetChanged();
         // Now set profile photo
-        Bitmap nullPhoto = BitmapFactory.decodeResource(getResources(),R.drawable.nullphoto);
-        profilePhoto.setImageBitmap(nullPhoto);
+        //Bitmap nullPhoto = BitmapFactory.decodeResource(getResources(),R.drawable.nullphoto);
+        encodedPhoto = this.getIntent().getByteArrayExtra("photo");
+        viewPhoto = BytesToBitmap(encodedPhoto);
+        profilePhoto.setImageBitmap(viewPhoto);
 
 
 
@@ -94,6 +98,9 @@ public class ContactProfile extends AppCompatActivity {
     @Override
     public void onBackPressed(){
         Intent doneViewing=new Intent();
+        doneViewing.putExtra("photo",this.encodedPhoto);
+        Log.e("Photo Trace","photo send back to main");
+        doneViewing.putExtra("name",this.name);
         ContactProfile.this.setResult(201,doneViewing);
         ContactProfile.this.finish();
     }
@@ -111,11 +118,26 @@ public class ContactProfile extends AppCompatActivity {
             Bitmap photo = Bitmap.createScaledBitmap(croppedPhoto,200,200,true);
             // Now show the photo (TEST)
             profilePhoto.setImageBitmap(photo);
-        } else{
+            this.viewPhoto = photo;
+            this.encodedPhoto = BitmapToBytes(photo);
+            Log.e("Photo Trace","taken photo updated to ContactProfile.java");
+        } else {
             Toast.makeText(this.getApplicationContext(),
                     "Profile photo not added",Toast.LENGTH_SHORT).show();
         }
-
     }
 
+    public byte[] BitmapToBytes(Bitmap bm) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bm.compress(Bitmap.CompressFormat.PNG, 100, baos);
+        return baos.toByteArray();
+    }
+
+    public Bitmap BytesToBitmap(byte[] b) {
+        if (b.length != 0) {
+            return BitmapFactory.decodeByteArray(b, 0, b.length);
+        } else {
+            return null;
+        }
+    }
 }
