@@ -1,14 +1,21 @@
 package com.example.detch.projjiaxing_contacts_app;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
+import android.graphics.Rect;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -17,10 +24,13 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CheckBox;
+import android.view.animation.DecelerateInterpolator;
 import android.widget.CompoundButton;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -44,8 +54,10 @@ public class ContactProfile extends AppCompatActivity {
     String relationshipsString;
     String[] relationshipNames;
     Bitmap viewPhoto;
+    Bitmap viewPhotoLarge;
     PhotoRepo repo; // database helper
     boolean hasPhoto;
+    private Animator mCurrentAnimator;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -110,6 +122,9 @@ public class ContactProfile extends AppCompatActivity {
                     // Start camera for a photo
                     Intent it = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                     startActivityForResult(it, Activity.DEFAULT_KEYS_DIALER);
+                } else {
+                    // Start the photo zoom animation effect
+                    zoomImage(findViewById(R.id.viewOrAddPhoto), repo.getPersonByName(name).getRawPhoto());
                 }
             }
         });
@@ -140,17 +155,19 @@ public class ContactProfile extends AppCompatActivity {
             // Now show the photo
             profilePhoto.setImageBitmap(photo);
             this.viewPhoto = photo;
+            this.viewPhotoLarge = rawPhoto;
             //this.encodedPhoto = BitmapToBytes(photo);
             Log.e("Photo","Photo taken and resized.");
             Person newFriend = new Person();
             newFriend.name = this.name;
             newFriend.setPhoto(this.viewPhoto);
-            newFriend.setRawPhoto(rawPhoto);
+            newFriend.setRawPhoto(this.viewPhotoLarge);
             repo.insert(newFriend);
+            this.hasPhoto = true;
             Log.e("SQLite","Added photo for " + this.name);
         } else {
             Toast.makeText(this.getApplicationContext(),
-                    "Profile photo not added",Toast.LENGTH_SHORT).show();
+                    "Profile photo not added", Toast.LENGTH_SHORT).show();
             Log.e("Photo", "Photo taking failed.");
         }
     }
@@ -176,7 +193,6 @@ public class ContactProfile extends AppCompatActivity {
     public byte[] Base64ToBytes(String st) {
         return Base64.decode(st,Base64.NO_WRAP);
     }
-
 
     public class DBHelper extends SQLiteOpenHelper {
 
@@ -365,5 +381,102 @@ public class ContactProfile extends AppCompatActivity {
             db.close();
             return list;
         }
+    }
+
+    public void zoomImage(final View thumbView, Bitmap photo){
+        Log.e("Zoomer","Zoomer called");
+        final int duration = 200; // ms
+        if (mCurrentAnimator != null){
+            mCurrentAnimator.cancel();
+        }
+
+        final ImageView expanded_image = (ImageView) this.findViewById(R.id.photoZoomed);
+        expanded_image.setImageBitmap(photo);
+
+        final Rect startBounds = new Rect();
+        final Rect finalBounds = new Rect();
+        final Point globalOffset = new Point();
+        //RelativeLayout container = (RelativeLayout) findViewById(R.id.background);
+
+
+        thumbView.getGlobalVisibleRect(startBounds);
+        if (this.getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+            this.findViewById(R.id.container).getGlobalVisibleRect(finalBounds);
+        }
+        else
+        {
+            this.findViewById(R.id.container).getGlobalVisibleRect(finalBounds);
+        }
+        //startBounds.offset(-globalOffset.x,-globalOffset.y);
+        //finalBounds.offset(-globalOffset.x,-globalOffset.y);
+
+        // for test only
+        startBounds.top -= 210;
+        startBounds.bottom -= 210;
+        finalBounds.top -= 210;
+        finalBounds.bottom -=210;
+
+        float startScale;
+
+        if((float) finalBounds.width() / finalBounds.height() > (float) startBounds.width() / startBounds.height()){
+            startScale  = (float) startBounds.width() / startBounds.height();
+            float startWidth = startScale * finalBounds.width();
+            float deltaWidth = (startWidth - startBounds.width()) / 2;
+            startBounds.left -= deltaWidth;
+            startBounds.right += deltaWidth;
+        }
+        else{
+            startScale = (float) startBounds.width() / finalBounds.width();
+            float startHeight = startScale * finalBounds.height();
+            float deltaHeight = (startHeight - startBounds.height()) / 2;
+            startBounds.top -= deltaHeight;
+            startBounds.bottom += deltaHeight;
+        }
+
+        thumbView.setAlpha(0f);
+        expanded_image.setVisibility(View.VISIBLE);
+        expanded_image.setPivotX(0f);
+        expanded_image.setPivotY(0f);
+        findViewById(R.id.background).setVisibility(View.INVISIBLE);
+
+        AnimatorSet set = new AnimatorSet();
+        set
+                .play(ObjectAnimator.ofFloat(expanded_image, View.X, startBounds.left, finalBounds.left))
+                .with(ObjectAnimator.ofFloat(expanded_image, View.Y,startBounds.top, finalBounds.top))
+                .with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_X,startScale, 1f)).with(ObjectAnimator.ofFloat(expanded_image,
+                View.SCALE_Y, startScale, 1f));
+        set.setDuration(duration);
+        set.setInterpolator(new DecelerateInterpolator());
+        set.start();
+
+        final float startScaleFinal = startScale;
+        expanded_image.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                findViewById(R.id.background).setVisibility(View.VISIBLE);
+                AnimatorSet set = new AnimatorSet();
+                set
+                        .play(ObjectAnimator.ofFloat(expanded_image, View.X, startBounds.left))
+                        .with(ObjectAnimator.ofFloat(expanded_image, View.Y, startBounds.top))
+                        .with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_X, startScaleFinal))
+                        .with(ObjectAnimator.ofFloat(expanded_image, View.SCALE_Y, startScaleFinal));
+                set.setDuration(duration);
+                set.setInterpolator(new DecelerateInterpolator());
+                set.addListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        thumbView.setAlpha(1f);
+                        expanded_image.setVisibility(View.GONE);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        thumbView.setAlpha(1f);
+                        expanded_image.setVisibility(View.GONE);
+                    }
+                });
+                set.start();
+            }
+        });
     }
 }
