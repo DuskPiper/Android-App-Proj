@@ -25,6 +25,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.AdapterView;
 import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
@@ -126,6 +127,20 @@ public class ContactProfile extends AppCompatActivity {
                     // Start the photo zoom animation effect
                     zoomImage(findViewById(R.id.viewOrAddPhoto), repo.getPersonByName(name).getRawPhoto());
                 }
+            }
+        });
+
+        viewRelationships.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
+                // Return to ContactsList and soon start a new profile activity
+                String anotherName = relationshipNames[position];
+                //boolean showAnother = true;
+                Intent anotherPersonInfo = new Intent(ContactProfile.this, ContactsList.class);
+                anotherPersonInfo.putExtra("anotherName", anotherName);
+                //personInfo.putExtra("showAnother", showAnother);
+                ContactProfile.this.setResult(210, anotherPersonInfo);
+                ContactProfile.this.finish();
             }
         });
     }

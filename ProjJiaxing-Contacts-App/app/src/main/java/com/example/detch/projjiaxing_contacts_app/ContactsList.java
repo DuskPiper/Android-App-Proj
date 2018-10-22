@@ -109,9 +109,9 @@ public class ContactsList extends AppCompatActivity {
                 //}
                 String nameToShow = personToShow.get("name");
                 Intent personInfo = new Intent(ContactsList.this,ContactProfile.class);
-                personInfo.putExtra("name",nameToShow);
-                personInfo.putExtra("phone",personToShow.get("phone"));
-                personInfo.putExtra("relationships",personToShow.get("relationships"));
+                personInfo.putExtra("name", nameToShow);
+                personInfo.putExtra("phone", personToShow.get("phone"));
+                personInfo.putExtra("relationships", personToShow.get("relationships"));
                 //personInfo.putExtra("photo",photoToShow);
                 startActivityForResult(personInfo,200);
             }
@@ -192,8 +192,29 @@ public class ContactsList extends AppCompatActivity {
                 //byte[] encodedPhoto = data.getByteArrayExtra("photo");
                 //String viewedName = data.getStringExtra("name");
                 //this.contactAlbum.put(viewedName,encodedPhoto);
-                Log.d("Main result", "Safely back from profile viewing.");
                 saveData(ContactsList.this);
+                break;
+            case 210:
+                // Done watching profile details but need to show another guy
+                saveData(ContactsList.this);
+                Map<String,String> personToShow = new HashMap<String, String>();
+                String nameToShow = data.getStringExtra("anotherName");
+                for (Map<String, String> findPersonForShow : this.contactbook) {
+                    if (findPersonForShow.get("name").equals(nameToShow)) {
+                        personToShow = findPersonForShow;
+                        break;
+                    }
+                }
+                if (personToShow.isEmpty()) {
+                    Log.e("Show profile failure", "Name not found");
+                    break;
+                }
+                Intent personInfo = new Intent(ContactsList.this,ContactProfile.class);
+                personInfo.putExtra("name", nameToShow);
+                personInfo.putExtra("phone", personToShow.get("phone"));
+                personInfo.putExtra("relationships", personToShow.get("relationships"));
+                //personInfo.putExtra("photo",photoToShow);
+                startActivityForResult(personInfo,200);
                 break;
             default:
                 break;
