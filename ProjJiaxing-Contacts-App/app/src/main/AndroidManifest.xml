@@ -10,12 +10,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity
-            android:name=".ContactsList"
+            android:name=".MainActivity"
             android:exported="true"/>
-        <activity
-            android:name=".AddNewContact"
-            android:label="@string/title_activity_add_new_contact" />
-        <activity android:name=".ContactProfile"></activity>
     </application>
 
 </manifest>

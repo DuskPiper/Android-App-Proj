@@ -1,19 +1,26 @@
 package com.example.detch.projjiaxing_contacts_app;
 
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -30,27 +37,63 @@ import java.io.ByteArrayOutputStream;
 import java.util.*;
 
 
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class ContactsList extends Fragment {
+    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_PARAM2 = "param2";
+    // TODO: Rename and change types of parameters
+    private String mParam1;
+    private String mParam2;
 
-public class ContactsList extends AppCompatActivity {
     Button del_button;
     Button add_button;
     ListView main_list;
     List<Map<String,String >> contactbook = new ArrayList<Map<String,String >>();//contacts and their relationships are saved here
     static List<Integer> to_delete = new ArrayList<Integer>();//index to delete
     ContactListMainListAdapter contactListAdapter;
-    //Map<String,byte[]> contactAlbum = new HashMap<String, byte[]>();
+    ArrayList<String> namelist = new ArrayList<String>();
+    private OnFragmentInteractionListener mListener;
+    String mTime;
+
+    public ContactsList() {}
+
+    public static ContactsList newInstance(){//ArrayList<String> namelist) {
+        ContactsList newFragment = new ContactsList();
+        //Bundle bundle = new Bundle();
+        //bundle.putStringArrayList("namelist", namelist);
+        //newFragment.setArguments(bundle);
+        return newFragment;
+    }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_contacts_list);
+    }
 
-        add_button = (Button) findViewById(R.id.addButton);
-        del_button = (Button) findViewById(R.id.delButton);
-        main_list = (ListView) findViewById(R.id.listOfContacts);
-        loadData(ContactsList.this);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            // Restore last state
+            mTime = savedInstanceState.getString("time_key");
+        } else {
+            mTime = "" + Calendar.getInstance().getTimeInMillis();
+        }
+        super.onCreate(savedInstanceState);
+        this.loadData();
+        for (Map<String, String> contact : contactbook) {
+            this.namelist.add(contact.get("name"));
+        }
+        //setContentView(R.layout.activity_contacts_list);
+        View view=inflater.inflate(R.layout.activity_contacts_list, container, false);
+        add_button = (Button) view.findViewById(R.id.addButton);
+        del_button = (Button) view.findViewById(R.id.delButton);
+        main_list = (ListView) view.findViewById(R.id.listOfContacts);
         contactListAdapter = new ContactListMainListAdapter(
-                ContactsList.this,contactbook,R.id.deleterBox,R.layout.contact_list_per_item,new String[]{"name"},new int[]{R.id.contactName});
+                getActivity(),contactbook,R.id.deleterBox,R.layout.contact_list_per_item,new String[]{"name"},new int[]{R.id.contactName});
         main_list.setAdapter(contactListAdapter);
         contactListAdapter.notifyDataSetChanged();
 
@@ -72,24 +115,43 @@ public class ContactsList extends AppCompatActivity {
                     cb.setChecked(false);
                 }
                 contactListAdapter.notifyDataSetChanged();
-                saveData(ContactsList.this);
+                saveData();
             }
         });
 
         add_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 ArrayList<String> names=new ArrayList<String>();
                 for(int i=0;i<contactbook.size();i++){
                     String name=contactbook.get(i).get("name");
                     names.add(name);
                 }
+                /*
                 Bundle sendnames=new Bundle();
                 sendnames.putStringArrayList("names",names);
                 Intent toAddNewContact=new Intent(ContactsList.this,AddNewContact.class);
                 toAddNewContact.putExtras(sendnames);
                 startActivityForResult(toAddNewContact,100);//+new contact
-                saveData(ContactsList.this);
+                saveData();
+                */
+                if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    AddNewContact fragment_2 = AddNewContact.newInstance(names);
+                    FragmentManager fragmentManager = getActivity().getFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.fragment_container, fragment_2);
+                    fragmentTransaction.addToBackStack(null);
+                    fragmentTransaction.commit();
+                }
+                else if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    AddNewContact fragment_2 = AddNewContact.newInstance(names);
+                    FragmentManager fragmentManager = getActivity().getFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.fragment_container2, fragment_2);
+                    fragmentTransaction.addToBackStack(null);
+                    fragmentTransaction.commit();
+                }
             }
         });
 
@@ -97,39 +159,86 @@ public class ContactsList extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
                 Map<String,String> personToShow = contactbook.get(position);
-                //byte[] photoToShow;
-                //if (contactAlbum.containsKey(nameToShow)) {
-                //    photoToShow = contactAlbum.get(nameToShow);
-                //    Log.e("Photo Trace","found photo for "+nameToShow+", sending to profile");
-                //} else {
-                //    Log.e("Photo Trace","cannot find photo for "+nameToShow+"using default");
-                //    Bitmap nullPhoto = BitmapFactory.decodeResource(getResources(),R.drawable.nullphoto);
-                //    photoToShow = BitmapToBytes(nullPhoto);
-                //    contactAlbum.put(nameToShow,photoToShow);
-                //}
                 String nameToShow = personToShow.get("name");
+                String phoneToShow = personToShow.get("phone");
+                String relationshipToShow = personToShow.get("relationships");
+                /*
                 Intent personInfo = new Intent(ContactsList.this,ContactProfile.class);
                 personInfo.putExtra("name", nameToShow);
-                personInfo.putExtra("phone", personToShow.get("phone"));
-                personInfo.putExtra("relationships", personToShow.get("relationships"));
-                //personInfo.putExtra("photo",photoToShow);
+                personInfo.putExtra("phone", phoneToShow);
+                personInfo.putExtra("relationships", relationshipToShow);
                 startActivityForResult(personInfo,200);
+                */
+                if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                    ContactProfile fragment_3 = ContactProfile.newInstance(nameToShow, phoneToShow, relationshipToShow);
+                    FragmentManager fragmentManager = getActivity().getFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.fragment_container2, fragment_3);
+                    fragmentTransaction.addToBackStack(null);
+                    fragmentTransaction.commit();
+                    //return false;
+                }
+                else if (getActivity().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    ContactProfile fragment_3 = ContactProfile.newInstance(nameToShow, phoneToShow, relationshipToShow);
+                    FragmentManager fragmentManager = getActivity().getFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+                    fragmentTransaction.replace(R.id.fragment_container, fragment_3);
+                    fragmentTransaction.addToBackStack(null);
+                    fragmentTransaction.commit();
+                }
             }
         });
+        return view;
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState){
+    public void onSaveInstanceState(Bundle outState){
         super.onSaveInstanceState(outState);
-        saveData(ContactsList.this);
+        outState.putString("time_key", mTime);
+        saveData();
     }
     @Override
-    protected void onPause(){
+    public void onPause(){
         super.onPause();
-        saveData(ContactsList.this);
+        saveData();
     }
+    public void onButtonPressed(Uri uri) {
+        if (mListener != null) {
+            mListener.onFragmentInteraction(uri);
+        }
+    }
+
     @Override
-    protected void onActivityResult(int requestCode,int resultCode,Intent data){
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnFragmentInteractionListener) {
+            mListener = (OnFragmentInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement OnFragmentInteractionListener");
+        }
+    }
+
+    public interface OnFragmentInteractionListener {
+        // TODO: Update argument type and name
+        void onFragmentInteraction(Uri uri);
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mListener = null;
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        saveData();
+    }
+
+    /*
+    @Override
+    public void onActivityResult(int requestCode,int resultCode,Intent data){
         //super.onActivityResult();
         this.to_delete.clear();
         switch(resultCode){
@@ -222,8 +331,9 @@ public class ContactsList extends AppCompatActivity {
 
 
     }
+    */
 
-    public void saveData(Context context) {
+    public void saveData() {
 
         // Now Save contactbook(contacts and relationships)
         List<Map<String, String>> data=this.contactbook;
@@ -241,42 +351,17 @@ public class ContactsList extends AppCompatActivity {
             }
             mJsonArray.put(object);
         }
-        SharedPreferences sp = context.getSharedPreferences("contact book", Context.MODE_PRIVATE);
+        SharedPreferences sp = getActivity().getSharedPreferences("contact book", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
         editor.putString(key, mJsonArray.toString());
         editor.commit();
-        /*
-        // Now encode contactAlbum photo(byte[]) into string(Base64) and Save
-        Map<String, String> encodedAlbum = new HashMap<String, String>();
-        List<Map<String,String>> data2 = new ArrayList<Map<String, String>>();
-        for (String decodedAlbumkey : this.contactAlbum.keySet()) {
-            String encodedAlbumPhoto = BytesToBase64(this.contactAlbum.get(decodedAlbumkey));
-            encodedAlbum.put(decodedAlbumkey,encodedAlbumPhoto);
-        }
-        String key2 = "contact album saves";
-        JSONArray mJsonArray2 = new JSONArray();
-        Iterator<Map.Entry<String, String>> iterator = encodedAlbum.entrySet().iterator();
-        JSONObject object2 = new JSONObject();
-        while (iterator.hasNext()) {
-            Map.Entry<String, String> entry = iterator.next();
-            try {
-                object2.put(entry.getKey(), entry.getValue());
-                Log.e("Photo Trace","saving photo for "+entry.getKey());
-            } catch (JSONException e) { }
-        }
-        mJsonArray2.put(object2);
-        SharedPreferences sp2 = context.getSharedPreferences("contact album", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor2 = sp2.edit();
-        editor2.putString(key2, mJsonArray2.toString());
-        editor2.commit();
-        */
     }
 
-    public void loadData(Context context) {
+    public void loadData() {
         // Now Restore data including contactbook(contacts and relationships)
         String key="contactbook saves";
         List<Map<String, String>> data = new ArrayList<Map<String, String>>();
-        SharedPreferences sp = context.getSharedPreferences("contact book", Context.MODE_PRIVATE);
+        SharedPreferences sp = getActivity().getSharedPreferences("contact book", Context.MODE_PRIVATE);
         String result = sp.getString(key, "");
         try {
             JSONArray array = new JSONArray(result);
@@ -295,33 +380,6 @@ public class ContactsList extends AppCompatActivity {
             }
         } catch (JSONException e) { }
         this.contactbook=data;
-        /*
-        // Now restore contact album
-        String key2 = "contact album saves";
-        Map<String, String> encodedAlbum = new HashMap<String, String>();
-        SharedPreferences sp2 = context.getSharedPreferences("contact album", Context.MODE_PRIVATE);
-        String result2 = sp2.getString(key2, "");
-        try {
-            JSONArray array2 = new JSONArray(result2);
-            JSONObject itemObject2 = array2.getJSONObject(0);
-            Map<String, String> itemMap2 = new HashMap<String, String>();
-            JSONArray names2 = itemObject2.names();
-            if (names2 != null) {
-                for (int j = 0; j < names2.length(); j++) {
-                    String name2 = names2.getString(j);
-                    String value2 = itemObject2.getString(name2);
-                    itemMap2.put(name2, value2);
-                    Log.e("Photo Trace","laoding photo for "+name2);
-                }
-            }
-            encodedAlbum = itemMap2;
-        } catch (JSONException e) { }
-        this.contactAlbum.clear();
-        for (String encodedAlbumKey : encodedAlbum.keySet()) {
-            byte[] decodedAlbumPhoto = Base64ToBytes(encodedAlbum.get(encodedAlbumKey));
-            this.contactAlbum.put(encodedAlbumKey,decodedAlbumPhoto);
-        }
-        */
     }
 
     public byte[] BitmapToBytes(Bitmap bm) {

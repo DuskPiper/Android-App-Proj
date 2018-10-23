@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:Android="http://schemas.android.com/apk/res-auto"
+    android:paddingBottom="5dp"
+    android:paddingTop="5dp"
+    android:orientation="horizontal"
+    tools:context="com.example.detch.projjiaxing_contacts_app.MainActivity">
+
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="#66CCFF"
+        android:layout_gravity="center_horizontal"
+        />
+
+    <FrameLayout
+        android:id="@+id/fragment_container1"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="3"></FrameLayout>
+
+    <FrameLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="2"
+        android:id="@+id/fragment_container2">
+    </FrameLayout>
+
+
+
+</LinearLayout>
