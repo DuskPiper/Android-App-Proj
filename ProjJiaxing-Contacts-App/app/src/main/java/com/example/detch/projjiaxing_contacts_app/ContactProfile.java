@@ -86,7 +86,7 @@ public class ContactProfile extends Fragment {
     private Animator mCurrentAnimator;
     String mTime;
     View view;
-    List<Map<String,String >> contactbook = new ArrayList<Map<String,String >>();
+    List<Map<String,String>> contactbook = new ArrayList<Map<String,String >>();
 
 
     public ContactProfile(){}
@@ -141,12 +141,27 @@ public class ContactProfile extends Fragment {
             relationshipNames=tmp.toString().split(",");
         }
         else{ }
-
+        ArrayList<String> namelist = new ArrayList<String>();
+        for (Map<String,String> person : contactbook) {
+            namelist.add(person.get("name"));
+        }
+        Log.e("namelist",namelist.toString());
+        boolean exists = false;
         liteContactBook=new ArrayList<Map<String, String>>();
         for(int i=0;i<relationshipNames.length;i++){
+            exists = false;
             Map<String,String> person=new HashMap<String ,String>();
-            person.put("name",relationshipNames[i]);
-            liteContactBook.add(person);
+            String currentName = relationshipNames[i];
+            for (String existedName : namelist) {
+                Log.e("checking relationships","current="+currentName+" compared to"+existedName);
+                if (currentName.equals(existedName)) {
+                    exists = true;
+                }
+            }
+            if(exists) {
+                person.put("name", currentName);
+                liteContactBook.add(person);
+            }
         }
         SimpleAdapter viewRelationshipAdapter = new SimpleAdapter(
                 getActivity(),liteContactBook,R.layout.relationship_without_checkbox_per_item,new String[]{"name"},new int[]{R.id.watchRelationshipName});

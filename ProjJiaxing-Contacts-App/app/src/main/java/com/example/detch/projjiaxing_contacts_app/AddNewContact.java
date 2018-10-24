@@ -11,6 +11,7 @@ import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.app.Activity;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -130,6 +131,28 @@ public class AddNewContact extends Fragment {
                 newPerson.put("phone",addedPhone);
                 newPerson.put("relationships",newRelationshipNames.toString());
                 contactbook.add(newPerson);
+                // add relationship to old friends
+                for(int i=0;i<newRelationshipNames.size();i++){
+                    String oldFriendName = newRelationshipNames.get(i);
+                    // for (Map<String,String> oldFriend : this.contactbook){
+                    for (int j=0;j<contactbook.size();j++){
+                        Map<String,String> oldFriend = contactbook.get(j);
+                        if (oldFriend.get("name").equals(oldFriendName)) {
+                            String updatedRelationships = new String();
+                            if (oldFriend.get("relationships").length()<3){// No relationship yet
+                                updatedRelationships = "["+newName+"]";
+                            } else {// Append newName to end of String
+                                StringBuffer oldRelationshipBuffer = new StringBuffer(oldFriend.get("relationships"));
+                                oldRelationshipBuffer.deleteCharAt(oldRelationshipBuffer.length()-1);
+                                updatedRelationships = oldRelationshipBuffer + ", " + newName + "]";
+                            }
+                            Log.e("Update old relationship"+oldFriendName,"Now relation:"+updatedRelationships);
+                            oldFriend.put("relationships",updatedRelationships);
+                            contactbook.set(j,oldFriend);// Update oldFriend back
+                        }
+                    }
+                }
+                // Save
                 saveData();
                 /*
                 Bundle sendBackNewContact =new Bundle();
