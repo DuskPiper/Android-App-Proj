@@ -141,6 +141,7 @@ public class ContactProfile extends Fragment {
             relationshipNames=tmp.toString().split(",");
         }
         else{ }
+        /*
         ArrayList<String> namelist = new ArrayList<String>();
         for (Map<String,String> person : contactbook) {
             namelist.add(person.get("name"));
@@ -162,6 +163,13 @@ public class ContactProfile extends Fragment {
                 person.put("name", currentName);
                 liteContactBook.add(person);
             }
+        }*/
+
+        liteContactBook=new ArrayList<Map<String, String>>();
+        for (String currentName : relationshipNames) {
+            Map<String,String> person=new HashMap<String ,String>();
+            person.put("name",currentName);
+            liteContactBook.add(person);
         }
         SimpleAdapter viewRelationshipAdapter = new SimpleAdapter(
                 getActivity(),liteContactBook,R.layout.relationship_without_checkbox_per_item,new String[]{"name"},new int[]{R.id.watchRelationshipName});

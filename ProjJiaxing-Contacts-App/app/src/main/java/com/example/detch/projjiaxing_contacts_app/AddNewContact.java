@@ -140,11 +140,11 @@ public class AddNewContact extends Fragment {
                         if (oldFriend.get("name").equals(oldFriendName)) {
                             String updatedRelationships = new String();
                             if (oldFriend.get("relationships").length()<3){// No relationship yet
-                                updatedRelationships = "["+newName+"]";
+                                updatedRelationships = "["+addedName+"]";
                             } else {// Append newName to end of String
                                 StringBuffer oldRelationshipBuffer = new StringBuffer(oldFriend.get("relationships"));
                                 oldRelationshipBuffer.deleteCharAt(oldRelationshipBuffer.length()-1);
-                                updatedRelationships = oldRelationshipBuffer + ", " + newName + "]";
+                                updatedRelationships = oldRelationshipBuffer + ", " + addedName + "]";
                             }
                             Log.e("Update old relationship"+oldFriendName,"Now relation:"+updatedRelationships);
                             oldFriend.put("relationships",updatedRelationships);
