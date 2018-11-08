@@ -3,6 +3,7 @@ package com.example.detch.projjintang_daily_path;
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Criteria;
@@ -17,13 +18,23 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -31,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView showCurrentLatitude;
     private TextView showCurrentAddress;
     private TextView showCurrentStatus;
+    private ListView showCheckedInPlaces;
     private Button checkinButton;
     private Button locateButton;
     private Button myMapButton;
@@ -39,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
     private String currentAddress;
     private String locationProvider;
     private boolean hasLocation = false;
+    private List<Map<String, String>> saves;
+    private List<Map<String, String>> adapterData;
 
     private LocationManager locationManager;
     private Geocoder geocoder;
@@ -56,15 +70,25 @@ public class MainActivity extends AppCompatActivity {
         this.checkinButton = (Button)findViewById(R.id.main_btn_checkin);
         this.locateButton = (Button)findViewById(R.id.main_btn_locate);
         this.myMapButton = (Button)findViewById(R.id.main_btn_my_map);
+        this.showCheckedInPlaces = (ListView)findViewById(R.id.add_list_history_show);
 
+        // LOAD DATA
+        loadData(this);
+        refreshAdapterData();
         this.currentAddress = "";
         this.currentLatitude = "";
         this.currentLongitude = "";
         geocoder = new Geocoder(this);
-
         getLocation();
 
+        // INITIALIZE UI
+        final SimpleAdapter viewHistoryCheckinsAdapter = new SimpleAdapter(
+                this, this.adapterData, R.layout.listview_history_checkins, new String[]{"name", "addr", "time", "lonlat"}, new int[]{R.id.listview_show_history_name, R.id.listview_show_history_address, R.id.listview_show_history_time, R.id.listview_show_history_longitude_latitude}
+        );
+        showCheckedInPlaces.setAdapter(viewHistoryCheckinsAdapter);
+        viewHistoryCheckinsAdapter.notifyDataSetChanged();
 
+        // SPECIFY LISTENERS
         locateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -79,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
                     // Start Checkin Activity for checkin
                     Intent startCheckinIntent = new Intent(MainActivity.this, CheckIn.class);
                     startCheckinIntent.putExtra("lat", currentLatitude);
-                    startCheckinIntent.putExtra("long", currentLongitude);
+                    startCheckinIntent.putExtra("lon", currentLongitude);
                     startCheckinIntent.putExtra("addr", currentAddress);
                     startActivityForResult(startCheckinIntent, 100);
                 } else {
@@ -88,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-        // ToDo: Add OnActivityResult
     }
 
     private void getLocation() {
@@ -184,6 +207,85 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("Location request","Denied");
                 }
             }
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // BACK FROM CHECKIN
+        switch (resultCode) {
+            case 10000: // Checkin Canceled
+                Toast.makeText(this, "Checkin Canceled", Toast.LENGTH_SHORT).show();
+                Log.e("Back from Checkin Page", "Checkin canceled");
+                break;
+            case 10010: // Checkin Successful
+                Toast.makeText(this, "Checkin Completed", Toast.LENGTH_SHORT).show();
+                Log.i("Back from Checkin Page", "Checkin successful");
+
+            default:
+                // Unregistered or unexpected result
+                Log.wtf("Back from activity", "UNEXPECTED RESULT CODE");
+        }
+    }
+
+    // ToDo: change save/load methods from SP to SQLite
+    public void saveData(Context context) {
+        // SAVE this.saves
+        List<Map<String, String>> data = this.saves;
+        String key = "visited-saves";
+        JSONArray mJsonArray = new JSONArray();
+        for (int i = 0; i < data.size(); i++) {
+            Map<String, String> itemMap = data.get(i);
+            Iterator<Map.Entry<String, String>> iterator = itemMap.entrySet().iterator();
+            JSONObject object = new JSONObject();
+            while (iterator.hasNext()) {
+                Map.Entry<String, String> entry = iterator.next();
+                try {
+                    object.put(entry.getKey(), entry.getValue());
+                } catch (JSONException e) { }
+            }
+            mJsonArray.put(object);
+        }
+        SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(key, mJsonArray.toString());
+        editor.commit();
+    }
+
+    public void loadData(Context context) {
+        // RESTORE SAVE DATA this.saves
+        String key = "visited-saves";
+        List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+        SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
+        String result = sp.getString(key, "");
+        try {
+            JSONArray array = new JSONArray(result);
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject itemObject = array.getJSONObject(i);
+                Map<String, String> itemMap = new HashMap<String, String>();
+                JSONArray names = itemObject.names();
+                if (names != null) {
+                    for (int j = 0; j < names.length(); j++) {
+                        String name = names.getString(j);
+                        String value = itemObject.getString(name);
+                        itemMap.put(name, value);
+                    }
+                }
+                data.add(itemMap);
+            }
+        } catch (JSONException e) { }
+        this.saves = data;
+    }
+
+    private void refreshAdapterData() {
+        this.adapterData = new ArrayList();
+        for (Map<String, String> eachSave : this.saves) {
+            Map<String, String> eachAdapterData = new HashMap<String, String>();
+            eachAdapterData.put("name", eachSave.get("name"));
+            eachAdapterData.put("addr", eachSave.get("addr"));
+            eachAdapterData.put("time", eachSave.get("time"));
+            eachAdapterData.put("lonlat", eachSave.get("lon") + ", " + eachSave.get("lat"));
+            this.adapterData.add(eachAdapterData);
         }
     }
 
