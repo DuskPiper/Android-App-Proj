@@ -1,5 +1,6 @@
 package com.example.detch.projjintang_daily_path;
 
+import android.content.Intent;
 import android.location.Location;
 // import android.location.LocationListener;
 import android.support.annotation.NonNull;
@@ -63,6 +64,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    @Override
+    public void onBackPressed() {
+        this.setResult(20010, new Intent()); // Checkin aborted
+        this.finish();
     }
 
     @Override

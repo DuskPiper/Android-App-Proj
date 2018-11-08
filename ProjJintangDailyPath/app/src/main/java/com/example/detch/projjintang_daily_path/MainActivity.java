@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean hasLocation = false;
     private List<Map<String, String>> saves;
     private List<Map<String, String>> adapterData;
+    private SimpleAdapter viewHistoryCheckinsAdapter;
 
     private LocationManager locationManager;
     private Geocoder geocoder;
@@ -82,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
         getLocation();
 
         // INITIALIZE UI
-        final SimpleAdapter viewHistoryCheckinsAdapter = new SimpleAdapter(
+        viewHistoryCheckinsAdapter = new SimpleAdapter(
                 this, this.adapterData, R.layout.listview_history_checkins, new String[]{"name", "addr", "time", "lonlat"}, new int[]{R.id.listview_show_history_name, R.id.listview_show_history_address, R.id.listview_show_history_time, R.id.listview_show_history_longitude_latitude}
         );
         showCheckedInPlaces.setAdapter(viewHistoryCheckinsAdapter);
@@ -110,6 +111,16 @@ public class MainActivity extends AppCompatActivity {
                     Log.e("Checkin location","Insufficient data, canceled.");
                 }
 
+            }
+        });
+
+        myMapButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent startMapIntent = new Intent(MainActivity.this, MapsActivity.class);
+                startMapIntent.putExtra("lat", currentLatitude);
+                startMapIntent.putExtra("lon", currentLongitude);
+                startActivityForResult(startMapIntent, 200);
             }
         });
     }
@@ -221,7 +232,13 @@ public class MainActivity extends AppCompatActivity {
             case 10010: // Checkin Successful
                 Toast.makeText(this, "Checkin Completed", Toast.LENGTH_SHORT).show();
                 Log.i("Back from Checkin Page", "Checkin successful");
-
+                loadData(this);
+                this.refreshAdapterData();
+                this.viewHistoryCheckinsAdapter.notifyDataSetChanged();
+                break;
+            case 20010: // Map view complete
+                Log.i("Back from Map Page", "Done watching map");
+                break;
             default:
                 // Unregistered or unexpected result
                 Log.wtf("Back from activity", "UNEXPECTED RESULT CODE");
