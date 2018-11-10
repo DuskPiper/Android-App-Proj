@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private String currentAddress;
     private String locationProvider;
     private boolean hasLocation = false;
-    private List<Map<String, String>> saves;
+    private List<Map<String, String>> saves; // Stores saved geopoints
     private List<Map<String, String>> adapterData;
     private SimpleAdapter viewHistoryCheckinsAdapter;
 

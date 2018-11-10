@@ -91,6 +91,7 @@ public class CheckIn extends AppCompatActivity {
                     checkinData.put("addr", checkinAddress);
                     checkinData.put("lat", checkinLatitude);
                     checkinData.put("lon", checkinLongitude);
+                    checkinData.put("mode", "checkin"); // Mode: checkin // Other modes: "bookmark"
                     saves.add(checkinData);
                     refreshAdapterData();
                     saveData(getApplicationContext());
