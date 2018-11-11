@@ -36,7 +36,10 @@ import java.util.Map;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
-    private List<Map<String, String>> saves;
+    private List<HashMap<String, String>> saves;
+    private GeoRepo db;
+    private String lastLat = "40.5214256";
+    private String lastLon = "-74.4612562";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +57,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .build();
         }
         // Initialize Data
-        this.loadData(this);
+        this.db = new GeoRepo(getApplicationContext());
+        this.loadData();
+        this.loadSPData();
     }
 
 
@@ -77,7 +82,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             LatLng point = new LatLng(Double.valueOf(location.get("lat")), Double.valueOf(location.get("lon")));
             mMap.addMarker(new MarkerOptions().position(point).title(location.get("name")));
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(40.5214256, -74.4612562), 16)); // CoRE Building
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(this.lastLat), Double.valueOf(this.lastLon)), 16)); // CoRE Building: 40.5214256, -74.4612562
     }
 
     @Override
@@ -141,28 +146,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return false;
     }
 
-    public void loadData(Context context) {
-        // RESTORE SAVE DATA this.saves
-        String key = "visited-saves";
-        List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+    public void loadSPData() {
+        // RESTORE SAVE DATA FROM SHARED PREFERENCES
+        Context context = getApplicationContext();
+        String key = "saves";
+        List<HashMap<String, String>> data = new ArrayList<HashMap<String, String>>();
         SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
         String result = sp.getString(key, "");
         try {
-            JSONArray array = new JSONArray(result);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject itemObject = array.getJSONObject(i);
-                Map<String, String> itemMap = new HashMap<String, String>();
-                JSONArray names = itemObject.names();
-                if (names != null) {
-                    for (int j = 0; j < names.length(); j++) {
-                        String name = names.getString(j);
-                        String value = itemObject.getString(name);
-                        itemMap.put(name, value);
-                    }
-                }
-                data.add(itemMap);
-            }
-        } catch (JSONException e) { }
-        this.saves = data;
+            JSONObject saves = new JSONObject(result);
+            this.lastLat = saves.getString("lastLat");
+            this.lastLon = saves.getString("lastLon");
+        } catch (JSONException e) {
+            Log.e("Load SP Data", "JSON Error, reseting last location to default");
+            this.lastLat = "40.5214256";
+            this.lastLon = "-74.4612562";
+        }
+    }
+
+    public void loadData() {
+        // RESTORE GEO DATA FROM SQLITE DB
+        this.saves = db.getAll();
+        Log.d("Load Data", "Data Loaded, size = " + Integer.toString(this.saves.size()));
     }
 }

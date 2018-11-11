@@ -1,63 +1,80 @@
 package com.example.detch.projjintang_daily_path;
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 
 public class GeoRepo {
     private DBHelper dbHelper;
 
-    public PhotoRepo(Context context){
+    public GeoRepo(Context context){
         dbHelper=new DBHelper(context);
     }
 
-    public int insert(Person person){
+    public int insert(Geo geo){
         SQLiteDatabase db=dbHelper.getWritableDatabase();
         ContentValues values=new ContentValues();
-        values.put(Person.KEY_ID, person.ID);
-        values.put(Person.KEY_name, person.name);
-        values.put(Person.KEY_rawPhoto, person.rawPhoto);
-        values.put(Person.KEY_photo, person.photo);
-        long person_Id=db.insert(Person.TABLE,null,values);
+        values.put(Geo.KEY_ID, geo.ID);
+        values.put(Geo.KEY_name, geo.name);
+        values.put(Geo.KEY_addr, geo.addr);
+        values.put(Geo.KEY_lat, geo.lat);
+        values.put(Geo.KEY_lon, geo.lon);
+        values.put(Geo.KEY_time, geo.time);
+        values.put(Geo.KEY_mode, geo.mode);
+        long geo_Id=db.insert(Geo.TABLE,null,values);
         db.close();
-        return (int)person_Id;
+        return (int)geo_Id;
     }
 
     public void delete(int Id){
         SQLiteDatabase db=dbHelper.getWritableDatabase();
-        db.delete(Person.TABLE,Person.KEY_ID+"=?", new String[]{String.valueOf(Id)});
+        db.delete(Geo.TABLE,Geo.KEY_ID+"=?", new String[]{String.valueOf(Id)});
         db.close();
     }
-    public void update (Person person) {
+    public void update (Geo geo) {
         SQLiteDatabase db=dbHelper.getWritableDatabase();
         ContentValues values=new ContentValues();
-        values.put(Person.KEY_name, person.name);
-        values.put(Person.KEY_photo, person.photo);
-        values.put(Person.KEY_rawPhoto, person.rawPhoto);
-        db.update(Person.TABLE,values,Person.KEY_ID+"=?",new String[] { String.valueOf(person.ID) });
+        values.put(Geo.KEY_name, geo.name);
+        values.put(Geo.KEY_addr, geo.addr);
+        values.put(Geo.KEY_lat, geo.lat);
+        values.put(Geo.KEY_lon, geo.lon);
+        values.put(Geo.KEY_time, geo.time);
+        values.put(Geo.KEY_mode, geo.mode);
+        db.update(Geo.TABLE,values,Geo.KEY_ID+"=?",new String[] { String.valueOf(geo.ID) });
         db.close();
     }
 
     public ArrayList<HashMap<String, String>> getAll () {
         SQLiteDatabase db=dbHelper.getReadableDatabase();
         String selectQuery="SELECT "+
-                Person.KEY_ID+","+
-                Person.KEY_name+","+
-                Person.KEY_rawPhoto+","+
-                Person.KEY_photo+" FROM "+Person.TABLE;
+                Geo.KEY_ID+","+
+                Geo.KEY_name+","+
+                Geo.KEY_addr+","+
+                Geo.KEY_lat+","+
+                Geo.KEY_lon+","+
+                Geo.KEY_time+","+
+                Geo.KEY_mode+" FROM "+Geo.TABLE;
         ArrayList<HashMap<String,String>> list=new ArrayList<HashMap<String, String>>();
         Cursor cursor=db.rawQuery(selectQuery,null);
         if(cursor.moveToFirst()){
             do{
-                HashMap<String,String> person=new HashMap<String,String>();
-                //person.put("id",cursor.getString(cursor.getColumnIndex(Person.KEY_ID)));
-                person.put("name",cursor.getString(cursor.getColumnIndex(Person.KEY_name)));
-                person.put("photo",cursor.getString(cursor.getColumnIndex(Person.KEY_photo)));
-                person.put("rawPhoto",cursor.getString(cursor.getColumnIndex(Person.KEY_rawPhoto)));
-                list.add(person);
+                HashMap<String,String> geo=new HashMap<String,String>();
+                //geo.put("id",cursor.getString(cursor.getColumnIndex(Geo.KEY_ID)));
+                geo.put("name",cursor.getString(cursor.getColumnIndex(Geo.KEY_name)));
+                geo.put("addr",cursor.getString(cursor.getColumnIndex(Geo.KEY_addr)));
+                geo.put("lat",cursor.getString(cursor.getColumnIndex(Geo.KEY_lat)));
+                geo.put("lon",cursor.getString(cursor.getColumnIndex(Geo.KEY_lon)));
+                geo.put("time",cursor.getString(cursor.getColumnIndex(Geo.KEY_time)));
+                geo.put("mode",cursor.getString(cursor.getColumnIndex(Geo.KEY_mode)));
+                list.add(geo);
             } while(cursor.moveToNext());
         }
         cursor.close();
@@ -65,68 +82,79 @@ public class GeoRepo {
         return list;
     }
 
-    public Person getPersonById(int Id){
+    public Geo getGeoById(int Id){
         SQLiteDatabase db=dbHelper.getReadableDatabase();
         String selectQuery="SELECT "+
-                Person.KEY_ID + "," +
-                Person.KEY_name + "," +
-                Person.KEY_rawPhoto + "," +
-                Person.KEY_photo +
-                " FROM " + Person.TABLE
+                Geo.KEY_ID + "," +
+                Geo.KEY_name + "," +
+                Geo.KEY_addr + "," +
+                Geo.KEY_lat+","+
+                Geo.KEY_lon+","+
+                Geo.KEY_time+","+
+                Geo.KEY_mode +
+                " FROM " + Geo.TABLE
                 + " WHERE " +
-                Person.KEY_ID + "=?";
-        Person person = new Person();
+                Geo.KEY_ID + "=?";
+        Geo geo = new Geo("","","","","","");
         Cursor cursor=db.rawQuery(selectQuery,new String[]{String.valueOf(Id)});
         if(cursor.moveToFirst()){
             do{
-                person.ID = cursor.getInt(cursor.getColumnIndex(Person.KEY_ID));
-                person.name = cursor.getString(cursor.getColumnIndex(Person.KEY_name));
-                person.photo  = cursor.getString(cursor.getColumnIndex(Person.KEY_photo));
-                person.rawPhoto  = cursor.getString(cursor.getColumnIndex(Person.KEY_rawPhoto));
+                geo.ID = cursor.getInt(cursor.getColumnIndex(Geo.KEY_ID));
+                geo.name = cursor.getString(cursor.getColumnIndex(Geo.KEY_name));
+                geo.addr  = cursor.getString(cursor.getColumnIndex(Geo.KEY_addr));
+                geo.lat  = cursor.getString(cursor.getColumnIndex(Geo.KEY_lat));
+                geo.lon  = cursor.getString(cursor.getColumnIndex(Geo.KEY_lon));
+                geo.time  = cursor.getString(cursor.getColumnIndex(Geo.KEY_time));
+                geo.mode  = cursor.getString(cursor.getColumnIndex(Geo.KEY_mode));
             }while(cursor.moveToNext());
         }
         cursor.close();
         db.close();
-        return person;
+        return geo;
     }
 
-    public Person getPersonByName(String name){
-        Log.e("SQLite", "Get Person by name: " + name);
+    public Geo getGeoByName(String name){
+        Log.i("SQLite", "Get Geo by name: " + name);
         SQLiteDatabase db=dbHelper.getReadableDatabase();
         String selectQuery="SELECT "+
-                Person.KEY_ID + "," +
-                Person.KEY_name + "," +
-                Person.KEY_rawPhoto + "," +
-                Person.KEY_photo +
-                " FROM " + Person.TABLE
+                Geo.KEY_ID + "," +
+                Geo.KEY_name + "," +
+                Geo.KEY_addr + "," +
+                Geo.KEY_lat+","+
+                Geo.KEY_lon+","+
+                Geo.KEY_time+","+
+                Geo.KEY_mode +
+                " FROM " + Geo.TABLE
                 + " WHERE " +
-                Person.KEY_name + "=?";
-        Person person = new Person();
+                Geo.KEY_name + "=?";
+        Geo geo = new Geo("","","","","","");
         Cursor cursor=db.rawQuery(selectQuery, new String[]{name});
         if(cursor.moveToFirst()){
             do{
-                person.ID = cursor.getInt(cursor.getColumnIndex(Person.KEY_ID));
-                person.name = cursor.getString(cursor.getColumnIndex(Person.KEY_name));
-                person.photo  = cursor.getString(cursor.getColumnIndex(Person.KEY_photo));
-                person.rawPhoto  = cursor.getString(cursor.getColumnIndex(Person.KEY_rawPhoto));
+                geo.ID = cursor.getInt(cursor.getColumnIndex(Geo.KEY_ID));
+                geo.name = cursor.getString(cursor.getColumnIndex(Geo.KEY_name));
+                geo.addr  = cursor.getString(cursor.getColumnIndex(Geo.KEY_addr));
+                geo.lat  = cursor.getString(cursor.getColumnIndex(Geo.KEY_lat));
+                geo.lon  = cursor.getString(cursor.getColumnIndex(Geo.KEY_lon));
+                geo.time  = cursor.getString(cursor.getColumnIndex(Geo.KEY_time));
+                geo.mode  = cursor.getString(cursor.getColumnIndex(Geo.KEY_mode));
             }while(cursor.moveToNext());
         }
         cursor.close();
         db.close();
-        return person;
+        return geo;
     }
 
     public ArrayList<String> getNames () {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
         String selectQuery="SELECT "+
-                Person.KEY_ID+","+
-                Person.KEY_name+","+
-                Person.KEY_photo+" FROM "+Person.TABLE;
+                Geo.KEY_ID+","+
+                Geo.KEY_name+" FROM "+Geo.TABLE;
         ArrayList<String> list = new ArrayList<String>();
         Cursor cursor=db.rawQuery(selectQuery,null);
         if(cursor.moveToFirst()){
             do{
-                list.add(cursor.getString(cursor.getColumnIndex(Person.KEY_name)));
+                list.add(cursor.getString(cursor.getColumnIndex(Geo.KEY_name)));
             }while(cursor.moveToNext());
         }
         cursor.close();
@@ -162,7 +190,7 @@ public class GeoRepo {
         }
     }
 
-    public class Geo {
+    public static class Geo {
         public static final String KEY_ID = "ID";
         public static final String TABLE = "geodata";
         public static final String KEY_name = "name";
@@ -179,7 +207,7 @@ public class GeoRepo {
         public String lon;
         public String time;
         public String mode;
-        
+
         public Geo (String name, String addr, String lat, String lon, String time, String mode) {
             this.ID = (int)System.currentTimeMillis();
             this.name = name;

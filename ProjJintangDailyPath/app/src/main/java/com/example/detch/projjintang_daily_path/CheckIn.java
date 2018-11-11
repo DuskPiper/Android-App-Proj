@@ -38,9 +38,10 @@ public class CheckIn extends AppCompatActivity {
     private String checkinAddress;
     private String checkinName;
     private String checkinTime;
-    private List<Map<String, String>> saves;
-    private List<Map<String, String>> adapterData;
+    private List<HashMap<String, String>> saves;
+    private List<HashMap<String, String>> adapterData;
     private boolean isInRangeOfHistory = false;
+    private GeoRepo db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,13 +53,14 @@ public class CheckIn extends AppCompatActivity {
         this.showCheckinAddress = (TextView)findViewById(R.id.add_txt_address_show);
         this.addNewNameForCheckin = (EditText)findViewById(R.id.add_input_name);
         this.addButtonToCheckin = (Button)findViewById(R.id.add_btn_add_location);
+        this.db = new GeoRepo(getApplicationContext());
 
         // LOAD DATA
         Intent  intent = getIntent();
         checkinLongitude = intent.getStringExtra("lon");
         checkinLatitude = intent.getStringExtra("lat");
         checkinAddress = intent.getStringExtra("addr");
-        this.loadData(this);
+        this.loadData();
         this.refreshAdapterData();
         this.checkinName = this.isInRangeOf(this.checkinLatitude, this.checkinLongitude, this.saves);
         this.addNewNameForCheckin.setText(this.checkinName);
@@ -85,17 +87,19 @@ public class CheckIn extends AppCompatActivity {
                     Toast.makeText(getApplicationContext(), "Please specify a name before checkin", Toast.LENGTH_SHORT).show();
                 } else {
                     // CHECKIN
-                    Map<String, String> checkinData = new HashMap<String, String>();
+                    HashMap<String, String> checkinData = new HashMap<String, String>();
                     checkinData.put("name", checkinName);
                     checkinData.put("time", checkinTime);
                     checkinData.put("addr", checkinAddress);
                     checkinData.put("lat", checkinLatitude);
                     checkinData.put("lon", checkinLongitude);
                     checkinData.put("mode", "checkin"); // Mode: checkin // Other modes: "bookmark"
+                    GeoRepo.Geo geo = new GeoRepo.Geo(checkinName, checkinAddress, checkinLatitude, checkinLongitude, checkinTime, "checkin");
+                    db.insert(geo);
                     saves.add(checkinData);
                     refreshAdapterData();
-                    saveData(getApplicationContext());
-                    // viewHistoryCheckinsAdapter.notifyDataSetChanged();
+                    //saveData(getApplicationContext());
+                    //viewHistoryCheckinsAdapter.notifyDataSetChanged();
                     Log.i("Checkin Page", "Checkin complete for " + checkinName);
 
                     CheckIn.this.setResult(10010, new Intent()); // Checkin success
@@ -119,17 +123,17 @@ public class CheckIn extends AppCompatActivity {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        this.saveData(this);
+        //this.saveData(this);
     }
 
     @Override
     public void onBackPressed() {
-        this.saveData(this);
+        //this.saveData(this);
         this.setResult(10000, new Intent()); // Checkin aborted
         this.finish();
     }
 
-    private String isInRangeOf(String lat, String lon, List<Map<String, String >> history) {
+    private String isInRangeOf(String lat, String lon, List<HashMap<String, String >> history) {
         final double EARTH_RADIUS = 6378137;// Earth radius
         double thisLat = Double.valueOf(lat);
         double thisLon = Double.valueOf(lon);
@@ -154,59 +158,15 @@ public class CheckIn extends AppCompatActivity {
         return df.format(new Date());// Transfer timestamp into format
     }
 
-    // ToDo: change save/load methods from SP to SQLite
-    public void saveData(Context context) {
-        // SAVE this.saves
-        List<Map<String, String>> data = this.saves;
-        String key = "visited-saves";
-        JSONArray mJsonArray = new JSONArray();
-        for (int i = 0; i < data.size(); i++) {
-            Map<String, String> itemMap = data.get(i);
-            Iterator<Map.Entry<String, String>> iterator = itemMap.entrySet().iterator();
-            JSONObject object = new JSONObject();
-            while (iterator.hasNext()) {
-                Map.Entry<String, String> entry = iterator.next();
-                try {
-                    object.put(entry.getKey(), entry.getValue());
-                } catch (JSONException e) { }
-            }
-            mJsonArray.put(object);
-        }
-        SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.putString(key, mJsonArray.toString());
-        editor.commit();
-    }
-
-    public void loadData(Context context) {
-        // RESTORE SAVE DATA this.saves
-        String key = "visited-saves";
-        List<Map<String, String>> data = new ArrayList<Map<String, String>>();
-        SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
-        String result = sp.getString(key, "");
-        try {
-            JSONArray array = new JSONArray(result);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject itemObject = array.getJSONObject(i);
-                Map<String, String> itemMap = new HashMap<String, String>();
-                JSONArray names = itemObject.names();
-                if (names != null) {
-                    for (int j = 0; j < names.length(); j++) {
-                        String name = names.getString(j);
-                        String value = itemObject.getString(name);
-                        itemMap.put(name, value);
-                    }
-                }
-                data.add(itemMap);
-            }
-        } catch (JSONException e) { }
-        this.saves = data;
+    public void loadData() {
+        // RESTORE GEO DATA FROM SQLITE DB
+        this.saves = db.getAll();
     }
 
     private void refreshAdapterData() {
         this.adapterData = new ArrayList();
-        for (Map<String, String> eachSave : this.saves) {
-            Map<String, String> eachAdapterData = new HashMap<String, String>();
+        for (HashMap<String, String> eachSave : this.saves) {
+            HashMap<String, String> eachAdapterData = new HashMap<String, String>();
             eachAdapterData.put("name", eachSave.get("name"));
             eachAdapterData.put("addr", eachSave.get("addr"));
             eachAdapterData.put("time", eachSave.get("time"));

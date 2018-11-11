@@ -51,13 +51,16 @@ public class MainActivity extends AppCompatActivity {
     private String currentAddress;
     private String locationProvider;
     private boolean hasLocation = false;
-    private List<Map<String, String>> saves; // Stores saved geopoints
-    private List<Map<String, String>> adapterData;
+    private List<HashMap<String, String>> saves; // Stores saved geopoints
+    private List<HashMap<String, String>> adapterData;
     private SimpleAdapter viewHistoryCheckinsAdapter;
 
     private LocationManager locationManager;
     private Geocoder geocoder;
     private int Y_PERMISSIONS_REQUEST_READ_CONTACTS = 998;
+    private GeoRepo db;
+    private String lastLat = "40.5214256";
+    private String lastLon = "-74.4612562";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +75,10 @@ public class MainActivity extends AppCompatActivity {
         this.locateButton = (Button)findViewById(R.id.main_btn_locate);
         this.myMapButton = (Button)findViewById(R.id.main_btn_my_map);
         this.showCheckedInPlaces = (ListView)findViewById(R.id.add_list_history_show);
+        this.db = new GeoRepo(getApplicationContext());
 
         // LOAD DATA
-        loadData(this);
+        loadData();
         refreshAdapterData();
         this.currentAddress = "";
         this.currentLatitude = "";
@@ -155,9 +159,13 @@ public class MainActivity extends AppCompatActivity {
             Location location = locationManager.getLastKnownLocation(locationProvider);
             if (location != null) {
                 showLocation(location);
+                this.lastLat = Double.toString(location.getLatitude());
+                this.lastLon = Double.toString(location.getLongitude());
+                saveSPData(); // Save last location data
             } else {
                 Log.e("Location Acquisition", "Not refreshed, awaiting for locationChangeListener");
                 locationManager.requestLocationUpdates(locationProvider, 0, 0, this.locationListener);
+                loadSPData(); // Load history location data
             }
         }
     }
@@ -232,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
             case 10010: // Checkin Successful
                 Toast.makeText(this, "Checkin Completed", Toast.LENGTH_SHORT).show();
                 Log.i("Back from Checkin Page", "Checkin successful");
-                loadData(this);
+                loadData();
                 this.refreshAdapterData();
                 this.viewHistoryCheckinsAdapter.notifyDataSetChanged();
                 break;
@@ -245,64 +253,68 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // ToDo: change save/load methods from SP to SQLite
-    public void saveData(Context context) {
-        // SAVE this.saves
-        List<Map<String, String>> data = this.saves;
-        String key = "visited-saves";
-        JSONArray mJsonArray = new JSONArray();
-        for (int i = 0; i < data.size(); i++) {
-            Map<String, String> itemMap = data.get(i);
-            Iterator<Map.Entry<String, String>> iterator = itemMap.entrySet().iterator();
-            JSONObject object = new JSONObject();
-            while (iterator.hasNext()) {
-                Map.Entry<String, String> entry = iterator.next();
-                try {
-                    object.put(entry.getKey(), entry.getValue());
-                } catch (JSONException e) { }
-            }
-            mJsonArray.put(object);
+
+    public void saveSPData() {
+        // SAVE DATA TO SHARED PREFERENCES
+        Context context = getApplicationContext();
+        String key = "saves";
+        JSONObject saves = new JSONObject();
+        try {
+            saves.put("lastLat", this.lastLat);
+            saves.put("lastLon", this.lastLon);
+        } catch (JSONException e) {
+            Log.e("Ssave SP Data", "JSON Error");
         }
         SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
-        editor.putString(key, mJsonArray.toString());
+        editor.putString(key, saves.toString());
         editor.commit();
     }
 
-    public void loadData(Context context) {
-        // RESTORE SAVE DATA this.saves
-        String key = "visited-saves";
-        List<Map<String, String>> data = new ArrayList<Map<String, String>>();
+    public void loadSPData() {
+        // RESTORE SAVE DATA FROM SHARED PREFERENCES
+        Context context = getApplicationContext();
+        String key = "saves";
+        List<HashMap<String, String>> data = new ArrayList<HashMap<String, String>>();
         SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
         String result = sp.getString(key, "");
         try {
-            JSONArray array = new JSONArray(result);
-            for (int i = 0; i < array.length(); i++) {
-                JSONObject itemObject = array.getJSONObject(i);
-                Map<String, String> itemMap = new HashMap<String, String>();
-                JSONArray names = itemObject.names();
-                if (names != null) {
-                    for (int j = 0; j < names.length(); j++) {
-                        String name = names.getString(j);
-                        String value = itemObject.getString(name);
-                        itemMap.put(name, value);
-                    }
-                }
-                data.add(itemMap);
-            }
-        } catch (JSONException e) { }
-        this.saves = data;
+            JSONObject saves = new JSONObject(result);
+            this.lastLat = saves.getString("lastLat");
+            this.lastLon = saves.getString("lastLon");
+        } catch (JSONException e) {
+            Log.e("Load SP Data", "JSON Error, reseting last location to default");
+            this.lastLat = "40.5214256";
+            this.lastLon = "-74.4612562";
+        }
+    }
+
+    public void loadData() {
+        // RESTORE GEO DATA FROM SQLITE DB
+        this.saves = db.getAll();
+        Log.d("Load Data", "Data Loaded, size = " + Integer.toString(this.saves.size()));
+    }
+
+    public void saveData(Context context) {
+        // SAVE GEO DATA TO SQLITE DB
+        // ToDo: add save all in GeoRepo
     }
 
     private void refreshAdapterData() {
-        this.adapterData = new ArrayList();
+        if (this.adapterData != null) {
+            this.adapterData.clear();
+        } else {
+            this.adapterData = new ArrayList();
+        }
         for (Map<String, String> eachSave : this.saves) {
-            Map<String, String> eachAdapterData = new HashMap<String, String>();
-            eachAdapterData.put("name", eachSave.get("name"));
-            eachAdapterData.put("addr", eachSave.get("addr"));
-            eachAdapterData.put("time", eachSave.get("time"));
-            eachAdapterData.put("lonlat", eachSave.get("lon") + ", " + eachSave.get("lat"));
-            this.adapterData.add(eachAdapterData);
+            if (eachSave.get("mode").equals("checkin")) {
+                HashMap<String, String> eachAdapterData = new HashMap<String, String>();
+                eachAdapterData.put("name", eachSave.get("name"));
+                eachAdapterData.put("addr", eachSave.get("addr"));
+                eachAdapterData.put("time", eachSave.get("time"));
+                eachAdapterData.put("lonlat", eachSave.get("lon") + ", " + eachSave.get("lat"));
+                this.adapterData.add(eachAdapterData);
+            }
         }
     }
 
