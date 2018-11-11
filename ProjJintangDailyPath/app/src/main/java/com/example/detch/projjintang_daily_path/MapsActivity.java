@@ -1,15 +1,19 @@
 package com.example.detch.projjintang_daily_path;
 
+import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.location.Location;
 // import android.location.LocationListener;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -40,6 +44,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private GeoRepo db;
     private String lastLat = "40.5214256";
     private String lastLon = "-74.4612562";
+    private int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 998;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,10 +82,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
         mMap.setOnMarkerClickListener(this);
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    MY_PERMISSIONS_ACCESS_FINE_LOCATION);
+        } else {
+            //Permission is granted
+            mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMyLocationButtonEnabled(true);
+            mMap.getUiSettings().setCompassEnabled(true);
+        }
+
 
         for (Map<String, String> location : this.saves) {
             LatLng point = new LatLng(Double.valueOf(location.get("lat")), Double.valueOf(location.get("lon")));
-            mMap.addMarker(new MarkerOptions().position(point).title(location.get("name")));
+            mMap.addMarker(new MarkerOptions()
+                    .position(point)
+                    .title(location.get("name"))
+                    .snippet(stringShortener(location.get("addr"), 15))
+            );
         }
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(this.lastLat), Double.valueOf(this.lastLon)), 16)); // CoRE Building: 40.5214256, -74.4612562
     }
@@ -168,5 +190,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // RESTORE GEO DATA FROM SQLITE DB
         this.saves = db.getAll();
         Log.d("Load Data", "Data Loaded, size = " + Integer.toString(this.saves.size()));
+    }
+
+    public String stringShortener(String st, int len) {
+        if (st.length() <= len) {
+            return st;
+        } else {
+            StringBuffer sb = new StringBuffer(st);
+            return (sb.substring(0, len) + "...");
+        }
     }
 }

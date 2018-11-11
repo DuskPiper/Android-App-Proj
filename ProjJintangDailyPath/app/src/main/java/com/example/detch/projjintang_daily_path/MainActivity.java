@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     private LocationManager locationManager;
     private Geocoder geocoder;
-    private int Y_PERMISSIONS_REQUEST_READ_CONTACTS = 998;
+    private int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 998;
     private GeoRepo db;
     private String lastLat = "40.5214256";
     private String lastLon = "-74.4612562";
@@ -135,11 +135,9 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            // No explanation needed, we can request the permission.
-
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    Y_PERMISSIONS_REQUEST_READ_CONTACTS);
+                    MY_PERMISSIONS_ACCESS_FINE_LOCATION);
         } else {
             //Permission is granted
             locationManager = (LocationManager)context.getSystemService(Context.LOCATION_SERVICE);
