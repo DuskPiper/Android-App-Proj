@@ -1,4 +1,5 @@
 <resources>
-    <string name="app_name">Daily Path</string>
+    <string name="app_name">Piper DailyPath</string>
     <string name="title_activity_maps">MyMap</string>
+    <string name="title_activity_main">DailyPath (HW-3)</string>
 </resources>

@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class AutoCheckinService extends Service { /*implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, com.google.android.gms.location.LocationListener {*/
+public class AutoCheckinService extends Service {
+    /*implements GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks, com.google.android.gms.location.LocationListener {*/
 
     protected LocationManager locationManager;
     private Geocoder geocoder;
@@ -54,6 +55,7 @@ public class AutoCheckinService extends Service { /*implements GoogleApiClient.O
         if (!permissionGranted) {
             Toast.makeText(getApplicationContext(), "Failure starting service: insufficient permission", Toast.LENGTH_SHORT).show();
             Log.e("Auto Checkin Service","Failed to start, insufficient permission");
+            stopSelf();
         } else {
             locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
             /*apiClient.connect();
@@ -188,7 +190,8 @@ public class AutoCheckinService extends Service { /*implements GoogleApiClient.O
         double ratLad2 = lat2 * Math.PI / 180.0;
         double latRadDif = ratLad1 - ratLad2; // Latitudes radius difference
         double lonRadDif = (lon1 * Math.PI / 180.0) - (lon2 * Math.PI / 180.0); // Longitudes radius difference
-        double distance = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(latRadDif / 2), 2) + Math.cos(ratLad1) * Math.cos(ratLad2) * Math.pow(Math.sin(lonRadDif / 2), 2)));
+        double distance = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(latRadDif / 2), 2)
+                + Math.cos(ratLad1) * Math.cos(ratLad2) * Math.pow(Math.sin(lonRadDif / 2), 2)));
         double distanceInMeter = distance * EARTH_RADIUS;
         return distanceInMeter;
     }
@@ -202,7 +205,8 @@ public class AutoCheckinService extends Service { /*implements GoogleApiClient.O
             double ratLad2 = thisLat * Math.PI / 180.0;
             double latRadDif = ratLad1 - ratLad2; // Latitudes radius difference
             double lonRadDif = (hisLon * Math.PI / 180.0) - (thisLon * Math.PI / 180.0); // Longitudes radius difference
-            double distance = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(latRadDif / 2), 2) + Math.cos(ratLad1) * Math.cos(ratLad2) * Math.pow(Math.sin(lonRadDif / 2), 2)));
+            double distance = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(latRadDif / 2), 2)
+                    + Math.cos(ratLad1) * Math.cos(ratLad2) * Math.pow(Math.sin(lonRadDif / 2), 2)));
             double distanceInMeter = distance * EARTH_RADIUS;
             if (distanceInMeter <= 30.0) {
                 return eachHistory.get("name");

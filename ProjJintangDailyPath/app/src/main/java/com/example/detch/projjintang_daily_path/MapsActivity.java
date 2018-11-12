@@ -1,7 +1,9 @@
 package com.example.detch.projjintang_daily_path;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -15,6 +17,8 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -32,12 +36,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
     private List<HashMap<String, String>> saves;
@@ -45,6 +52,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private String lastLat = "40.5214256";
     private String lastLon = "-74.4612562";
     private int MY_PERMISSIONS_ACCESS_FINE_LOCATION = 998;
+    private GeoRepo.Geo bookMark;
+    private int bookmarkId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,7 +113,61 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .snippet(stringShortener(location.get("addr"), 15))
             );
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(this.lastLat), Double.valueOf(this.lastLon)), 16)); // CoRE Building: 40.5214256, -74.4612562
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(this.lastLat), Double.valueOf(this.lastLon)), 16));
+        // CoRE Building: 40.5214256, -74.4612562
+
+        // SET LISTENERS
+        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(final LatLng latLng) {
+                Log.d("Google Map", "Map clicked");
+                final EditText bookmarkNameET = new EditText(MapsActivity.this);
+                new AlertDialog.Builder(MapsActivity.this)
+                        .setTitle("New Bookmark Name")
+                        .setView(bookmarkNameET)
+                        .setPositiveButton("YES", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                mMap.addMarker(new MarkerOptions()
+                                        .position(latLng)
+                                        .snippet("User Defined Location")
+                                        .title(bookmarkNameET.getText().toString()))
+                                        .setDraggable(true);
+                                bookMark = new GeoRepo.Geo(
+                                        bookmarkNameET.getText().toString(),
+                                        "User bookmark",
+                                        Double.toString(latLng.latitude),
+                                        Double.toString(latLng.longitude),
+                                        currentTimeInFormat(),
+                                        "bookmark");
+                                bookmarkId = db.insert(bookMark);
+                                bookMark.setId(bookmarkId);
+                            }
+                        }).setNegativeButton("CANCEL", null).show();
+            }
+        });
+
+        mMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+                if (bookMark != null) {
+                    bookMark.lat = Double.toString(marker.getPosition().latitude);
+                    bookMark.lon = Double.toString(marker.getPosition().longitude);
+                    db.update(bookMark);
+                    Toast.makeText(MapsActivity.this, "Bookmark position updated", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     @Override
@@ -199,5 +262,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             StringBuffer sb = new StringBuffer(st);
             return (sb.substring(0, len) + "...");
         }
+    }
+
+    private String currentTimeInFormat() {
+        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");// Time format
+        return df.format(new Date());// Transfer timestamp into format
     }
 }

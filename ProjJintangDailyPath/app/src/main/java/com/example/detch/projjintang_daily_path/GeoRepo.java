@@ -217,6 +217,10 @@ public class GeoRepo {
             this.time = time;
             this.mode = mode;
         }
+
+        public void setId(int id) {
+            this.ID = id;
+        }
     }
 }
 
