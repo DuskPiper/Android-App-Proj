@@ -65,6 +65,10 @@
                 android:value="com.example.detch.projjintang_daily_path.MainActivity" />
         </activity>
         <uses-library android:name="com.google.android.maps" />
+        <service
+            android:name=".AutoCheckinService"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
 
 </manifest>

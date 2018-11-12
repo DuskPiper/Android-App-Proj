@@ -125,15 +125,29 @@
 
     <Button
         android:id="@+id/main_btn_locate"
-        android:layout_width="match_parent"
+        android:layout_width="170dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginStart="8dp"
+        android:gravity="center"
         android:text="RE - LOCATE"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintRight_toLeftOf="@+id/main_btn_auto_checkin" />
+
+    <Button
+        android:id="@+id/main_btn_auto_checkin"
+        android:layout_width="170dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginStart="8dp"
+        android:gravity="center"
+        android:text="AUTO CHECKIN"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@+id/main_btn_locate"
+
         app:layout_constraintStart_toStartOf="parent" />
+
 
     <Button
         android:id="@+id/main_btn_my_map"

@@ -1,8 +1,10 @@
 package com.example.detch.projjintang_daily_path;
 
 import android.Manifest;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
@@ -46,11 +48,13 @@ public class MainActivity extends AppCompatActivity {
     private Button checkinButton;
     private Button locateButton;
     private Button myMapButton;
+    private Button autoCheckinButton;
     private String currentLongitude;
     private String currentLatitude;
     private String currentAddress;
     private String locationProvider;
     private boolean hasLocation = false;
+    private boolean autoCheckinEnabled = false;
     private List<HashMap<String, String>> saves; // Stores saved geopoints
     private List<HashMap<String, String>> adapterData;
     private SimpleAdapter viewHistoryCheckinsAdapter;
@@ -74,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
         this.checkinButton = (Button)findViewById(R.id.main_btn_checkin);
         this.locateButton = (Button)findViewById(R.id.main_btn_locate);
         this.myMapButton = (Button)findViewById(R.id.main_btn_my_map);
+        this.autoCheckinButton = (Button)findViewById(R.id.main_btn_auto_checkin);
         this.showCheckedInPlaces = (ListView)findViewById(R.id.add_list_history_show);
         this.db = new GeoRepo(getApplicationContext());
 
@@ -92,8 +97,17 @@ public class MainActivity extends AppCompatActivity {
         );
         showCheckedInPlaces.setAdapter(viewHistoryCheckinsAdapter);
         viewHistoryCheckinsAdapter.notifyDataSetChanged();
+        if (autoCheckinEnabled) {
+            autoCheckinButton.setText("STOP AUTO CHKIN");
+        } else {
+            autoCheckinButton.setText("AUTO CHECKIN");
+        }
 
         // SPECIFY LISTENERS
+        IntentFilter filter = new IntentFilter();
+        filter.addAction("piper-dailypath-auto-checkin");
+        registerReceiver(new checkinServiceReceiver(), filter);
+
         locateButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -125,6 +139,25 @@ public class MainActivity extends AppCompatActivity {
                 startMapIntent.putExtra("lat", currentLatitude);
                 startMapIntent.putExtra("lon", currentLongitude);
                 startActivityForResult(startMapIntent, 200);
+            }
+        });
+
+        autoCheckinButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (!autoCheckinEnabled) {
+                    // START AUTO CHECKIN
+                    autoCheckinEnabled = true;
+                    autoCheckinButton.setText("STOP AUTO CHKIN");
+                    Intent serviceIntent = new Intent(MainActivity.this, AutoCheckinService.class);
+                    startService(serviceIntent);
+                } else {
+                    // STOP AUTO CHECKIN
+                    autoCheckinEnabled = false;
+                    autoCheckinButton.setText("AUTO CHECKIN");
+                    Intent stopServiceIntent = new Intent(MainActivity.this, AutoCheckinService.class);
+                    stopService(stopServiceIntent);
+                }
             }
         });
     }
@@ -251,7 +284,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-
     public void saveSPData() {
         // SAVE DATA TO SHARED PREFERENCES
         Context context = getApplicationContext();
@@ -261,7 +293,7 @@ public class MainActivity extends AppCompatActivity {
             saves.put("lastLat", this.lastLat);
             saves.put("lastLon", this.lastLon);
         } catch (JSONException e) {
-            Log.e("Ssave SP Data", "JSON Error");
+            Log.e("Save SP Data", "JSON Error");
         }
         SharedPreferences sp = context.getSharedPreferences("saves-sp", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
@@ -313,6 +345,17 @@ public class MainActivity extends AppCompatActivity {
                 eachAdapterData.put("lonlat", eachSave.get("lon") + ", " + eachSave.get("lat"));
                 this.adapterData.add(eachAdapterData);
             }
+        }
+    }
+
+    private class checkinServiceReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // We just learnt that checkin service just checked in
+            Log.d("Auto Checkin Receive", "New auto checkin broadcast received");
+            loadData();
+            refreshAdapterData();
+            viewHistoryCheckinsAdapter.notifyDataSetChanged();
         }
     }
 
