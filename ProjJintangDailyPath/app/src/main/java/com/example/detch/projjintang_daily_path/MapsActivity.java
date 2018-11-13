@@ -7,8 +7,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Criteria;
 import android.location.Location;
-// import android.location.LocationListener;
+import android.location.LocationManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -22,6 +23,7 @@ import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -31,6 +33,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationListener;
+//import android.location.LocationListener;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,10 +47,12 @@ import java.util.List;
 import java.util.Map;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
-        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, LocationListener {
+        GoogleApiClient.OnConnectionFailedListener, GoogleMap.OnMarkerClickListener, com.google.android.gms.location.LocationListener {
     private GoogleMap mMap;
     private GoogleApiClient mGoogleApiClient;
+    private LocationRequest mLocationRequest;
     private List<HashMap<String, String>> saves;
+    private List<Marker> markers;
     private GeoRepo db;
     private String lastLat = "40.5214256";
     private String lastLon = "-74.4612562";
@@ -70,8 +75,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .addApi(LocationServices.API)
                     .build();
         }
+        mGoogleApiClient.connect();
         // Initialize Data
         this.db = new GeoRepo(getApplicationContext());
+        this.markers = new ArrayList<Marker>();
         this.loadData();
         this.loadSPData();
     }
@@ -102,19 +109,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             mMap.setMyLocationEnabled(true);
             mMap.getUiSettings().setMyLocationButtonEnabled(true);
             mMap.getUiSettings().setCompassEnabled(true);
-        }
 
+            if (mGoogleApiClient.isConnected()) {
+                mLocationRequest = new LocationRequest();
+                mLocationRequest.setInterval(5000);
+                mLocationRequest.setFastestInterval(3000);
+                mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+                LocationServices.FusedLocationApi.requestLocationUpdates(
+                        mGoogleApiClient, mLocationRequest, (com.google.android.gms.location.LocationListener)this);
+            }
+        }
 
         for (Map<String, String> location : this.saves) {
             LatLng point = new LatLng(Double.valueOf(location.get("lat")), Double.valueOf(location.get("lon")));
-            mMap.addMarker(new MarkerOptions()
+            Marker eachMarker = mMap.addMarker(new MarkerOptions()
                     .position(point)
                     .title(location.get("name"))
-                    .snippet(stringShortener(location.get("addr"), 15))
+                    .snippet(location.get("time"))
+                    //.snippet(stringShortener(location.get("addr"), 15))
             );
+            markers.add(eachMarker);
         }
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(Double.valueOf(this.lastLat), Double.valueOf(this.lastLon)), 16));
         // CoRE Building: 40.5214256, -74.4612562
+        showInfoInRange(Double.valueOf(this.lastLat), Double.valueOf(this.lastLon), markers);
 
         // SET LISTENERS
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
@@ -128,11 +146,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         .setPositiveButton("YES", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
-                                mMap.addMarker(new MarkerOptions()
+                                Marker bookmarkMarker = mMap.addMarker(new MarkerOptions()
                                         .position(latLng)
-                                        .snippet("User Defined Location")
-                                        .title(bookmarkNameET.getText().toString()))
-                                        .setDraggable(true);
+                                        .snippet(currentTimeInFormat())
+                                        .draggable(true)
+                                        .title(bookmarkNameET.getText().toString()));
+                                markers.add(bookmarkMarker);
                                 bookMark = new GeoRepo.Geo(
                                         bookmarkNameET.getText().toString(),
                                         "User bookmark",
@@ -172,7 +191,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onBackPressed() {
-        this.setResult(20010, new Intent()); // Checkin aborted
+        this.setResult(20010, new Intent());
         this.finish();
     }
 
@@ -194,6 +213,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
+        Log.d("Map Location Listener", "Location changed");
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
+        showInfoInRange(location.getLatitude(), location.getLongitude(), markers);
     }
 /*
     @Override
@@ -231,6 +253,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         return false;
     }
 
+
     public void loadSPData() {
         // RESTORE SAVE DATA FROM SHARED PREFERENCES
         Context context = getApplicationContext();
@@ -267,5 +290,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private String currentTimeInFormat() {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");// Time format
         return df.format(new Date());// Transfer timestamp into format
+    }
+
+    private void showInfoInRange(double thisLat, double thisLon, List<Marker> markers) {
+        final double EARTH_RADIUS = 6378137;// Earth radius
+        for (Marker eachMarker : markers) {
+            double hisLat = eachMarker.getPosition().latitude;
+            double hisLon = eachMarker.getPosition().longitude;
+            double ratLad1 = hisLat * Math.PI / 180.0;
+            double ratLad2 = thisLat * Math.PI / 180.0;
+            double latRadDif = ratLad1 - ratLad2; // Latitudes radius difference
+            double lonRadDif = (hisLon * Math.PI / 180.0) - (thisLon * Math.PI / 180.0); // Longitudes radius difference
+            double distance = 2 * Math.asin(Math.sqrt(Math.pow(Math.sin(latRadDif / 2), 2) + Math.cos(ratLad1) * Math.cos(ratLad2) * Math.pow(Math.sin(lonRadDif / 2), 2)));
+            double distanceInMeter = distance * EARTH_RADIUS;
+            if (distanceInMeter <= 30.0) {
+                eachMarker.showInfoWindow();
+            } else {
+                eachMarker.hideInfoWindow();
+            }
+        }
     }
 }

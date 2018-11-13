@@ -277,6 +277,9 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case 20010: // Map view complete
                 Log.i("Back from Map Page", "Done watching map");
+                loadData();
+                this.refreshAdapterData();
+                this.viewHistoryCheckinsAdapter.notifyDataSetChanged();
                 break;
             default:
                 // Unregistered or unexpected result
