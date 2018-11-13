@@ -72,7 +72,7 @@ public class AutoCheckinService extends Service {
                     double latSinceCheckin = curLat;
                     double lonSinceCheckin = curLon;
                     while (looper <= 1080 && looperDaemon) { // 3 Hours auto-close
-                        Log.e("Auto Checkin Loop", "Looping #" + Integer.toString(looper));
+                        Log.d("Auto Checkin Loop", "Looping #" + Integer.toString(looper));
                         looper += 1;
                         refreshLocation();
                         double distance = distanceInMeter(curLat, curLon, latSinceCheckin, lonSinceCheckin);
