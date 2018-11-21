@@ -42,9 +42,9 @@ public class MainActivity extends AppCompatActivity {
 
         // INITIALIZE
         paint = new Paint();
-        paint.setStrokeWidth(5);
+        paint.setStrokeWidth(7);
         paint.setColor(Color.CYAN);
-        paintStatus = "draw";
+        paintStatus = "show";
 
         // SET LISTENERS
         ivCanvas.setOnTouchListener(new View.OnTouchListener() {
@@ -106,66 +106,31 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        /*
-        View.OnTouchListener touch = new View.OnTouchListener() {
-            float startX;
-            float startY; // Finger touch starting positions
-
+        btnDrawOrStop.setOnClickListener(new View.OnClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        Log.d("Draw", "Case = touch down");
-                        // INITIALIZE FOR FIRST DRAW
-                        if (baseBitmap == null) {
-                            baseBitmap = Bitmap.createBitmap(ivCanvas.getWidth(),
-                                    ivCanvas.getHeight(), Bitmap.Config.ARGB_8888);
-                            canvas = new Canvas(baseBitmap);
-                            canvas.drawColor(Color.WHITE);
-                        }
-                        // RECORD START POSITION
-                        startX = event.getX();
-                        startY = event.getY();
-                        renewStatusBar(0, startX, startY);
-                        break;
-                    // FINGER MOVING
-                    case MotionEvent.ACTION_MOVE:
-                        Log.d("Draw", "Case = touch move");
-                        // RECORD STOP POSITION
-                        float stopX = event.getX();
-                        float stopY = event.getY();
-
-                        // CREATE LINK BETWEEN START AND STOP SPOTS
-                        if (paintStatus.equals("draw")) {
-                            canvas.drawLine(startX, startY, stopX, stopY, paint);
-                        }
-
-                        // RENEW START POSITION
-                        startX = event.getX();
-                        startY = event.getY();
-                        renewStatusBar(0, startX, startY);
-
-                        // SHOW IMAGE
-                        if (paintStatus.equals("draw")) {
-                            ivCanvas.setImageBitmap(baseBitmap);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                        Log.d("Draw", "Case = touch up");
-                        startX = event.getX();
-                        startY = event.getY();
-                        renewStatusBar(0, startX, startY);
-                        break;
-                    default:
-                        startX = event.getX();
-                        startY = event.getY();
-                        renewStatusBar(0, startX, startY);
-                        break;
+            public void onClick(View v) {
+                if (paintStatus.equals("show")) {
+                    paintStatus = "draw";
+                    btnDrawOrStop.setText("STOP DRAW");
+                    Log.d("Mode Button", "Switched to mode: DRAW");
+                } else {
+                    paintStatus = "show";
+                    btnDrawOrStop.setText("DRAW");
+                    Log.d("Mode Button", "Switched to mode: SHOW");
                 }
-                return true;
             }
-        };
-        */
+        });
+
+        btnClear.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                baseBitmap = Bitmap.createBitmap(ivCanvas.getWidth(),
+                        ivCanvas.getHeight(), Bitmap.Config.ARGB_8888);
+                canvas = new Canvas(baseBitmap);
+                canvas.drawColor(Color.WHITE);
+                ivCanvas.setImageBitmap(baseBitmap);
+            }
+        });
     }
 
     private void renewStatusBar(int pointerId, float x, float y) {
