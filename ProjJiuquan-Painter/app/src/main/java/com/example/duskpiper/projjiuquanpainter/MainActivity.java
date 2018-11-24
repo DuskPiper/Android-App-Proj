@@ -33,7 +33,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView statusBar;
 
     private Paint paint;
-    private Paint circlePaint;
     private Bitmap baseBitmap;
     private Canvas canvas;
     private String paintStatus; // "show", "draw"
@@ -61,9 +60,6 @@ public class MainActivity extends AppCompatActivity {
         paint = new Paint();
         paint.setStrokeWidth(7);
         paint.setColor(Color.CYAN);
-        circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        circlePaint.setColor(Color.RED);
-        circlePaint.setStyle(Paint.Style.FILL);
         paintStatus = "show";
         btnClear.setVisibility(View.INVISIBLE);
         colors = new int[]{Color.RED, Color.BLUE, Color.YELLOW, Color.GREEN, Color.LTGRAY, Color.CYAN, Color.MAGENTA};
@@ -78,7 +74,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View v, MotionEvent event) {
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        Log.d("Draw", "Case = touch down");
+                        // Log.d("Draw", "Case = touch down");
                         // INITIALIZE FOR FIRST DRAW
                         if (baseBitmap == null) {
                             baseBitmap = Bitmap.createBitmap(ivCanvas.getWidth(), ivCanvas.getHeight(), Bitmap.Config.ARGB_8888);
@@ -116,7 +112,6 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("Draw", "Case = touch up");
                         startX = event.getX();
                         startY = event.getY();
-                        // renewStatusBar(event.getPointerId(event.getActionIndex()), startX, startY);
                         statusBar.setText("No touch detected...");
                         break;
                     default:
@@ -130,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
+        // SWITCH VIEW BETWEEN DRAW MODE AND SHOW MODE
         btnDrawOrStop.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -149,6 +145,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // CLEAR CANVAS BITMAP IN DRAW MODE
         btnClear.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -161,8 +158,9 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // DEFAULT VIEW FOR SHOW MODE
     class TouchCircleView extends SurfaceView {
-        // VIEW THAT SHOW TOUCH FINGERPRINTS
+        // VIEW THAT SHOWS TOUCH FINGERPRINTS
         private final SurfaceHolder surfaceHolder;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private Canvas canvas;
