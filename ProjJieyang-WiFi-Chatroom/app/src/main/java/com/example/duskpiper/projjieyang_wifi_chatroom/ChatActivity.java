@@ -5,12 +5,14 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -23,8 +25,10 @@ public class ChatActivity extends AppCompatActivity {
     private Button sendButton;
     private Button setAddrButton;
     private TextView debugWindow;
+    private TextView chatWindow;
     private ArrayList<String> debugInfo;
-    private int debugMaxLength = 12;
+    private ArrayList<String> messages;
+    private int debugMaxLength = 6;
     private StringBuffer output;
     private String message;
     private String host;
@@ -41,13 +45,15 @@ public class ChatActivity extends AppCompatActivity {
         inputIP = (EditText)findViewById(R.id.ip_edit);
         inputPort = (EditText)findViewById(R.id.port_edit);
         setAddrButton = (Button)findViewById(R.id.set_addr_button);
+        chatWindow = (TextView)findViewById(R.id.chat_window);
 
-        host = "192.168.0.1";
+        host = "172.31.142.15";
         port = 999;
         checkWiFiConnection(this);
         output = new StringBuffer();
         inputIP.setText(host);
         inputPort.setText(Integer.toString(port));
+        messages = new ArrayList<String>();
         updateDebugWindow("> System initialized.");
 
         sendButton.setOnClickListener(new View.OnClickListener() {
@@ -95,6 +101,15 @@ public class ChatActivity extends AppCompatActivity {
         debugWindow.setText(output);
     }
 
+    private void updateChatWindow(String newMessage) {
+        messages.add(newMessage);
+        StringBuffer showMessages = new StringBuffer();
+        for (String eachMessage : messages) {
+            showMessages.append(eachMessage + "\n");
+        }
+        chatWindow.setText(showMessages);
+    }
+
     private boolean checkWiFiConnection(Context context){
         ConnectivityManager connectManager = (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
@@ -116,14 +131,30 @@ public class ChatActivity extends AppCompatActivity {
                 Socket socket;
                 try {
                     // CONNECT
-                    updateDebugWindow("> Wrapping message...");
+                    Log.i("socket", "wrapping");
                     socket = new Socket(host, port);
-                    updateDebugWindow("> Connection successful.");
+
+                    Log.i("socket", "connected");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateDebugWindow("> Sender connection successful.");
+                        }
+                    });
+
                     DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                     sendTextMsg(out, message);
                     out.close();
                     socket.close();
-                    updateDebugWindow("> Message sent");
+
+                    Log.i("socket", "sent");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateDebugWindow("> Message sent.");
+                            updateChatWindow("Me: " + message);
+                        }
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                     //updateDebugWindow("> Failed to connect");
@@ -132,8 +163,39 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
+    public void receive(View view){
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Socket socket;
+                try {
+                    socket = new Socket(host, port);
+
+                    Log.i("socket", "connected");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            updateDebugWindow("> Receiver connection successful.");
+                        }
+                    });
+
+                    DataInputStream input = new DataInputStream(socket.getInputStream());
+                    long len = input.readLong();
+                    byte[] bytes = new byte[(int)len];
+                    input.read(bytes);
+                    String receivedMessage = new String(bytes);
+                    Log.i("accept", "len: " + len);
+                    Log.i("accept", "msg: " + receivedMessage);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
     public void sendTextMsg(DataOutputStream out, String msg) throws IOException {
-        updateDebugWindow("> Sending message...");
+        // updateDebugWindow("> Sending message...");
+        Log.i("socket", "sending");
         byte[] bytes = msg.getBytes();
         long len = bytes.length;
         out.writeLong(len);
