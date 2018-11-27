@@ -3,6 +3,7 @@ package com.example.duskpiper.projjieyang_wifi_chatroom;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Looper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,9 +13,11 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -33,6 +36,7 @@ public class ChatActivity extends AppCompatActivity {
     private String message;
     private String host;
     private int port;
+    private boolean looperDaemon = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +51,8 @@ public class ChatActivity extends AppCompatActivity {
         setAddrButton = (Button)findViewById(R.id.set_addr_button);
         chatWindow = (TextView)findViewById(R.id.chat_window);
 
-        host = "172.31.142.15";
-        port = 999;
+        host = "172.31.140.11";
+        port = 65534;
         checkWiFiConnection(this);
         output = new StringBuffer();
         inputIP.setText(host);
@@ -80,6 +84,7 @@ public class ChatActivity extends AppCompatActivity {
                 host = inputIP.getText().toString();
                 port = Integer.valueOf(inputPort.getText().toString());
                 updateDebugWindow("> Set new addr = " + host + ":" + Integer.toString(port));
+                receive();
             }
         });
     }
@@ -163,14 +168,16 @@ public class ChatActivity extends AppCompatActivity {
         }).start();
     }
 
-    public void receive(View view){
+    public void receive(){
         new Thread(new Runnable() {
             @Override
             public void run() {
+                Looper.prepare();
                 Socket socket;
+                DataInputStream input;
+                byte[] bytes;
                 try {
                     socket = new Socket(host, port);
-
                     Log.i("socket", "connected");
                     runOnUiThread(new Runnable() {
                         @Override
@@ -178,14 +185,34 @@ public class ChatActivity extends AppCompatActivity {
                             updateDebugWindow("> Receiver connection successful.");
                         }
                     });
+                    while (looperDaemon) {
+                        Log.i("Receiver Loop", "Running");
 
-                    DataInputStream input = new DataInputStream(socket.getInputStream());
-                    long len = input.readLong();
-                    byte[] bytes = new byte[(int)len];
-                    input.read(bytes);
-                    String receivedMessage = new String(bytes);
-                    Log.i("accept", "len: " + len);
-                    Log.i("accept", "msg: " + receivedMessage);
+                        input = new DataInputStream(socket.getInputStream());
+                        //long len = input.readLong();
+                        //int len = input.readUnsignedShort();
+                        int len = 80;
+                        bytes = new byte[(int)len];
+                        input.read(bytes);
+                        final String receivedMessage = new String(bytes);
+
+                        if (receivedMessage.length() > 1) {
+                            Log.e("MSG", receivedMessage);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    updateDebugWindow("> Message received.");
+                                    updateChatWindow("Remote: " + receivedMessage);
+                                }
+                            });
+                        }
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
